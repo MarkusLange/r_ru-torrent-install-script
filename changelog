@@ -1,15 +1,27 @@
+Version 0.5
+* Move changelog to github 
+* Use changelog direct from github
+* Grep user information direct from system
+* Remove pre installation dependency from curl to wget
+-----------------------------------------------------------------
+
+Version 0.4
+* Establish changelog
+* Use latest rtorrent.rc direct from github
+-----------------------------------------------------------------
+
 Version 0.3
-Add System Information
+* Add System Information
 -----------------------------------------------------------------
 
 Version 0.2
-Use the latest rtorrent.rc available 
-Add THE BEER-WARE LICENSE (Revision 42)
+* Use the latest rtorrent.rc available 
+* Add THE BEER-WARE LICENSE (Revision 42)
 -----------------------------------------------------------------
 
 Version 0.1
-Commandline GUI based on whiptail
-Installscript based on:
-https://github.com/Kerwood/Rtorrent-Auto-Install
-https://github.com/Bercik1337/rt-auto-install
-https://github.com/arakasi72/rtinst
+* Commandline GUI based on whiptail
+* Installscript based on:
+  https://github.com/Kerwood/Rtorrent-Auto-Install
+  https://github.com/Bercik1337/rt-auto-install
+  https://github.com/arakasi72/rtinst
