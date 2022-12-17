@@ -1,12 +1,13 @@
+Version 0.3
+Add System Information
+-----------------------------------------------------------------
 Version 0.2
 Use the latest rtorrent.rc available 
 Add THE BEER-WARE LICENSE (Revision 42)
-
 -----------------------------------------------------------------
-
 Version 0.1
-Based on whiptail
-Based on:
+Commandline GUI based on whiptail
+Installscript based on:
 https://github.com/Kerwood/Rtorrent-Auto-Install
 https://github.com/Bercik1337/rt-auto-install
 https://github.com/arakasi72/rtinst
