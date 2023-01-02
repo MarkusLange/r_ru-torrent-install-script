@@ -1,16 +1,17 @@
 Version 0.7
-* move from tmux to demonmode if rtorrent version is greater
+* move from tmux to daemon-mode if rtorrent version is greater
   than 0.9.6
-* use glently exit for rtorrent from Bercik1337 (Version 0.9)
+* adopt glently exit for rtorrent from Bercik1337 (Version 0.9)
 * moved from whiptail to dialog for reasons of clarity inside
   the script and rewrite some stuff
+* use --colors from dialog to adopt color scheme
 -----------------------------------------------------------------
 
 Version 0.6
 * remove dependency from libapache2-mod-scgi
 * move from scgi.open_port to open_local
-  https://arstechnica.com/information-technology/2018/03/hackers-exploiting-rtorrent-to-install-unix-coin-miner-have-netted-4k-so-far/
   https://github.com/rakshasa/rtorrent/issues/696
+  https://arstechnica.com/information-technology/2018/03/hackers-exploiting-rtorrent-to-install-unix-coin-miner-have-netted-4k-so-far/
 -----------------------------------------------------------------
 
 Version 0.5
