@@ -1,19 +1,18 @@
 Version 0.8
 * add HTTPS support, with HTTP to HTTPS redirection, made
-   possible by Self Signed and Let's Encrypt Certificates tested
-   with https://www.ssllabs.com/ssltest/
-   Self Signed (if trust issues are ignored) A
-   Let's Encrypt A+
+  possible by Self Signed and Let's Encrypt Certificates tested
+  with https://www.ssllabs.com/ssltest/
+  Self Signed (if trust issues are ignored) A
+  Let's Encrypt A+
 * rewrite almost everything
-
 -----------------------------------------------------------------
 
 Version 0.7
 * move from tmux to daemon-mode if rtorrent version is greater
-   than 0.9.6
+  than 0.9.6
 * adopt glently exit for rtorrent from Bercik1337 (Version 0.9)
 * moved from whiptail to dialog for reasons of clarity inside
-   the script and rewrite some stuff
+  the script and rewrite some stuff
 * use --colors from dialog to adopt color scheme
 -----------------------------------------------------------------
 
@@ -21,8 +20,8 @@ Version 0.6
 * get ruTorrent Versions direct from github
 * remove dependency from libapache2-mod-scgi
 * move from scgi.open_port to open_local
-   https://github.com/rakshasa/rtorrent/issues/696
-   https://arstechnica.com/information-technology/2018/03/hackers-exploiting-rtorrent-to-install-unix-coin-miner-have-netted-4k-so-far/
+  https://github.com/rakshasa/rtorrent/issues/696
+  https://arstechnica.com/information-technology/2018/03/hackers-exploiting-rtorrent-to-install-unix-coin-miner-have-netted-4k-so-far/
 -----------------------------------------------------------------
 
 Version 0.5
@@ -35,7 +34,7 @@ Version 0.5
 Version 0.4
 * Establish changelog
 * Use latest rtorrent.rc direct from
-   https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template
+  https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template
 -----------------------------------------------------------------
 
 Version 0.3
@@ -50,6 +49,6 @@ Version 0.2
 Version 0.1
 * Commandline GUI based on whiptail
 * Installscript loosely based on:
-   https://github.com/Kerwood/Rtorrent-Auto-Install
-   https://github.com/Bercik1337/rt-auto-install
-   https://github.com/arakasi72/rtinst
+  https://github.com/Kerwood/Rtorrent-Auto-Install
+  https://github.com/Bercik1337/rt-auto-install
+  https://github.com/arakasi72/rtinst
