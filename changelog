@@ -1,25 +1,34 @@
+Version 0.9 (first public release)
+* Create scripted installation
+* Shorting Menu, with option of expanding
+* Correcting Changelog look in dialog
+* Add Installationlog to Script
+* Having rtorrent Basedir inside home rtorrent user is now optional
+* Add WebAuth to Menu
+-----------------------------------------------------------------
+
 Version 0.8
-* add HTTPS support, with HTTP to HTTPS redirection, made
-  possible by Self Signed and Let's Encrypt Certificates tested
+* Add HTTPS support, with HTTP to HTTPS redirection, made
+  possible by Self Signed or Let's Encrypt Certificates tested
   with https://www.ssllabs.com/ssltest/
-  Self Signed (if trust issues are ignored) A
+  Self Signed A (if trust issues are ignored)
   Let's Encrypt A+
-* rewrite almost everything
+* Rewrite almost everything
 -----------------------------------------------------------------
 
 Version 0.7
-* move from tmux to daemon-mode if rtorrent version is greater
+* Move from tmux to daemon-mode if rtorrent version is greater
   than 0.9.6
-* adopt glently exit for rtorrent from Bercik1337 (Version 0.9)
-* moved from whiptail to dialog for reasons of clarity inside
+* Adopt glently exit for rtorrent from Bercik1337 (Version 0.9)
+* Moved from whiptail to dialog for reasons of clarity inside
   the script and rewrite some stuff
-* use --colors from dialog to adopt color scheme
+* Use --colors from dialog to adopt color scheme
 -----------------------------------------------------------------
 
 Version 0.6
-* get ruTorrent Versions direct from github
-* remove dependency from libapache2-mod-scgi
-* move from scgi.open_port to open_local
+* Get ruTorrent Versions direct from github
+* Remove dependency from libapache2-mod-scgi
+* Move from scgi.open_port to open_local
   https://github.com/rakshasa/rtorrent/issues/696
   https://arstechnica.com/information-technology/2018/03/hackers-exploiting-rtorrent-to-install-unix-coin-miner-have-netted-4k-so-far/
 -----------------------------------------------------------------
@@ -28,7 +37,7 @@ Version 0.5
 * Move changelog to github 
 * Use changelog direct from github
 * Grep user information direct from system
-* Remove pre installation dependency from curl to wget
+* Move pre installation dependency from curl to wget
 -----------------------------------------------------------------
 
 Version 0.4
