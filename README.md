@@ -29,8 +29,8 @@ This script does not work with the scripts above for upgrades or updates
     - Mint
     - Raspbian/Raspberry Pi OS
   - needs only wget and dialog, pre installation
-  - choose between present user or add a new one for rtorrent
-  - script keeps itself actuall (grep Users and ruTorrent Version on startup)
+  - choose present user or add a new one for rtorrent
+  - script keeps itself actuall (grep users and ruTorrent Version on startup)
   - Web Authenification can de-/activate on will user can add and remove
   - SSL support Self signed or Let's encrypt
   - HTTP to HTTPS redirection
