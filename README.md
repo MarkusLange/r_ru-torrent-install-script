@@ -17,7 +17,8 @@ This is the first release of this script and the first of it's kind a GUI based 
 - https://github.com/Bercik1337/rt-auto-install
 - https://github.com/arakasi72/rtinst
 
-This script does not work as a replacement or with the scripts above for upgrades
+This script does not work with the scripts above for upgrades or updates
+
 ## Features ##
 - GUI
   - full GUI based configuration and installation
