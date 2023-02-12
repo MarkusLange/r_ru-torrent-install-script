@@ -99,7 +99,7 @@ function MENU {
 	menu_options=("0" "System Information"
 	              "1" "Licence"
 	              "2" "Changelog"
-				  "I" "Scripted Installation"
+	              "I" "Scripted Installation"
 	              "R" "Update/Change ruTorrent"
 	              "V" "Change VHost"
 	              "S" "Enable SSL for VHost"
@@ -115,14 +115,14 @@ function MENU {
 	if $fullmenu
 	then
 		menu_options+=("3" "SELECT_USER"
-	                   "4" "Allow SSH"
-	                   "5" "Deny SSH"
-	                   "6" "Remove User"
-					   "7" "Install webserver & php"
-	                   "8" "Install rtorrent on User $(who am i | cut -d" " -f1)"
-					   "E" "Edit rtorrent.rc"
-					   "Z" "Install Complete"
-					   "N" "Script")
+		               "4" "Allow SSH"
+		               "5" "Deny SSH"
+		               "6" "Remove User"
+		               "7" "Install webserver & php"
+		               "8" "Install rtorrent on User $(who am i | cut -d" " -f1)"
+		               "E" "Edit rtorrent.rc"
+		               "Z" "Install Complete"
+		               "N" "Script")
 	fi
 	
 	SELECTED=$(dialog --title "Menu" --cancel-label "Exit" --stdout --menu "Options" 20 70 12 "${menu_options[@]}")
@@ -155,7 +155,7 @@ function INSTALLLOG {
 	# 255 means user hit [Esc] key.
 	case $EXITCODE in
 	0|1|255)	;;
-	3)			rm -f install.log
+	3)			rm -f install.log;;
 	esac
 	MENU
 }
@@ -423,7 +423,7 @@ Please try again\n\
 
 function ALLOW_SSH () {
 	if grep -q '^DenyUsers' '/etc/ssh/sshd_config';
-    then
+	then
 		present=$(grep "^DenyUsers" /etc/ssh/sshd_config)
 		#change tab to space
 		present2=$(echo $present)
@@ -765,7 +765,7 @@ function CHANGE_RTORRENTRC () {
 	# 3 means user hit EXTRA button.
 	# 255 means user hit [Esc] key.
 	case $EXITCODE in
-	0)   	sed -i '/port_range.set/ s/'"$PORT_RANGE"'/'"$NEW_PORT_RANGE"'/' $HOMEDIR/.rtorrent.rc
+	0)		sed -i '/port_range.set/ s/'"$PORT_RANGE"'/'"$NEW_PORT_RANGE"'/' $HOMEDIR/.rtorrent.rc
 			sed -i '/port_random.set/ s/'"$PORT_SET"'/'"$SELECTED"'/' $HOMEDIR/.rtorrent.rc
 			sed -i 's#'"$DLFOLDER"'#'"$NEW_DLFOLDER"'#' $HOMEDIR/.rtorrent.rc;;
 	1|255)	;;
@@ -982,7 +982,7 @@ function LET_ENCRYPT_FOR_SSL () {
 	CURRENT_CONF=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect)
 	DOMAIN_NAME=$1
 	
-    a2enmod ssl 1> /dev/null
+	a2enmod ssl 1> /dev/null
 	a2enmod headers 1> /dev/null
 	
 	apt-get install -y python3-certbot-apache
@@ -1785,7 +1785,7 @@ function INSTALL_COMPLETE {
 	HOMEDIR=${USER[4]}
 	BASEDIR=${RC[2]}
 	
-    dialog --title "Installation Complete" \
+	dialog --title "Installation Complete" \
 	--stdout \
 	--colors \
 	--msgbox "\
