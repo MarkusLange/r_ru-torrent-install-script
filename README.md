@@ -52,3 +52,4 @@ This script does not work with the scripts above for upgrades or updates
 - more screenshots
 - explain the benefits
 - add links as knowledgebase for everyone
+- tabel of tested Debian based Linux systems
