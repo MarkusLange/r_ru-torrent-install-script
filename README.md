@@ -18,25 +18,30 @@ This is the first release of this script and the first of it's kind a GUI based 
 - https://github.com/arakasi72/rtinst
 
 ## Features ##
-- full GUI based configuration and installation
-- grep systeminformation by itself
-- works on all Debian based Linux systems (apt and systemd are needed)
-  - Ubuntu
-  - Mint
-  - Raspbian
-- needs only wget and dialog pre installation
-- choose between present user or add a new one
-- script keeps itself actuall
-- ruTorrent can easily updated
-- Web Authenification can de-/activate on will user can add and remove
-- SSL support self signed or Let's encrypt
-- HTTP to HTTPS redirection
-- did not use deprecated libapache2-mod-scgi
-- use of secure open_local instead of open_port from rtorrent with rutorrent
-- used latest rtorrent.rc direct from rtorrent git
-- used deamon.mode from rtorrent if possible
-- shows installation log
-- script shows actuall changelog from git
+- GUI
+  - full GUI based configuration and installation
+  - grep systeminformation by itself
+  - works on all Debian based Linux systems (apt and systemd are needed)
+    - Debian
+    - Ubuntu
+    - Mint
+    - Raspbian
+  - needs only wget and dialog pre installation
+  - choose between present user or add a new one
+  - script keeps itself actuall (grep Users and ruTorrent Version on startup)
+  - Web Authenification can de-/activate on will user can add and remove
+  - SSL support Self signed or Let's encrypt
+  - HTTP to HTTPS redirection
+  - shows installation log
+  - script shows actuall changelog from git
+- ruTorrent
+  - ruTorrent can easily updated
+  - add python path to rutorrent to support cloudflare
+- rtorrent
+  - did not use deprecated libapache2-mod-scgi
+  - use of secure open_local instead of open_port from rtorrent with rutorrent
+  - used latest rtorrent.rc direct from rtorrent git
+  - used deamon.mode for rtorrent if possible
 - more under screenshots
 
 ## To-Do's ##
