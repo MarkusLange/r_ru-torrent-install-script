@@ -24,12 +24,12 @@ This script does not work with the scripts above for upgrades or updates
   - full GUI based configuration and installation
   - grep systeminformation by itself
   - works on all Debian based Linux systems (apt and systemd are needed)
-    - Debian
+    - Debian (tested 9+)
     - Ubuntu
     - Mint
-    - Raspbian
-  - needs only wget and dialog pre installation
-  - choose between present user or add a new one
+    - Raspbian/Raspberry Pi OS
+  - needs only wget and dialog, pre installation
+  - choose between present user or add a new one for rtorrent
   - script keeps itself actuall (grep Users and ruTorrent Version on startup)
   - Web Authenification can de-/activate on will user can add and remove
   - SSL support Self signed or Let's encrypt
@@ -39,14 +39,16 @@ This script does not work with the scripts above for upgrades or updates
 - ruTorrent
   - ruTorrent can easily updated
   - add python path to rutorrent to support cloudflare
-- rtorrent
   - did not use deprecated libapache2-mod-scgi
-  - use of secure open_local instead of open_port from rtorrent with rutorrent
-  - used latest rtorrent.rc direct from rtorrent git
-  - used deamon.mode for rtorrent if possible
+- rtorrent
+  - use of secure open_local instead of open_port from rtorrent with rutorrent (https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC)
+  - used latest rtorrent.rc direct from rtorrent github (https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template)
+  - used deamon.mode for rtorrent if possible (rtorrent 0.9.7+)
 - more under screenshots
 
 ## To-Do's ##
 - more details
 - add screenshots to readme
+- more screenshots
 - explain the benefits
+- add links as knowledgebase for everyone
