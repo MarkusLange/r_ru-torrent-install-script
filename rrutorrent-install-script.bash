@@ -839,7 +839,8 @@ function SELF_SIGNED () {
 		# 255 means user hit [Esc] key.
 		case $EXITCODE in
 		0|1|255)	;;
-		3)			SELF_SIGNED_SSL $DNS;;
+		3)			SELF_SIGNED_SSL $DNS
+					systemctl restart apache2.service 1> /dev/null;;
 		esac
 	else
 		SELF_SIGNED_SSL $1
@@ -879,7 +880,7 @@ function SELF_SIGNED_SSL () {
 	L=$(echo "$host_information" | grep "city" | cut -d'"' -f4)
 	O=$(echo "$host_information" | grep "org" | cut -d'"' -f4)
 	CN=$1
-	DNS=$(echo "$host_information" | grep "ip" | cut -d'"' -f4)
+	DNS=$(echo "$host_information" | grep "ip" -m 1 | cut -d'"' -f4)
 	
 	#https://9to5answer.com/err_ssl_key_usage_incompatible-solution
 	#keyUsage = keyEncipherment, dataEncipherment
@@ -1170,6 +1171,7 @@ EOF
 		a2dissite https_redirect.conf 1>> $LOG_REDIRECTION
 	fi
 	systemctl reload apache2.service 1>> $LOG_REDIRECTION
+	systemctl restart apache2.service 1>> $LOG_REDIRECTION
 }
 
 function CHANGE_VHOST () {

@@ -1,3 +1,8 @@
+Version 1.1
+* Bugfix "Change VHost" needs a restart if certificats are
+  changed or activated, Renew Self Signed too
+-----------------------------------------------------------------
+
 Version 1.0
 * Since the maximum lifespan of SSL/TLS certificates has been
   limited to 398 days, added the option to renew the certificate
