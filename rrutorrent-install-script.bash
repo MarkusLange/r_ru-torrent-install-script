@@ -102,7 +102,7 @@ function MENU {
 	              "I" "Scripted Installation"
 	              "R" "Update/Change ruTorrent"
 	              "V" "Change VHost"
-	              "S" "Enable SSL for VHost"
+	              "S" "Enable/Renew SSL for VHost"
 	              "W" "Enable/Disable WebAuth"
 	              "A" "Add User to WebAuth"
 	              "U" "Remove User from WebAuth")
@@ -624,7 +624,7 @@ function RTORRENT_LOCAL () {
 }
 
 function RTORRENT () {
-	# 0 User attribute, 1 Username, 2 User password, 3 Usergroup 4 User homedir, 5 User SSH status
+	# USER[_] 0 User attribute, 1 Username, 2 User password, 3 Usergroup = Username, 4 User homedir, 5 User SSH status
 	USER[0]=
 	USER[1]=$1
 	USER[2]=
@@ -807,7 +807,7 @@ function SSL_FOR_WEBSERVER () {
 	--trim \
 	--ok-label "Self Signed" \
 	--extra-button \
-	--extra-label "Let's encrypt" \
+	--extra-label "Let's Encrypt" \
 	--inputbox "Enter the Domain Name for the Webpage and choose the SSL Certificate" 20 70 $dummy_hostname \
 	)
 	EXITCODE=$?
@@ -826,10 +826,21 @@ function SSL_FOR_WEBSERVER () {
 }
 
 function SELF_SIGNED () {
-	if [[ $(a2query -s | cut -d' ' -f1 | grep -v https_redirect | grep -c -i "SSL") -ne 0 ]]
+	if [[ $(a2query -s | cut -d' ' -f1 | grep -v https_redirect | grep -c -i "SS-SSL") -ne 0 ]]
 	then
-		dialog --title "" --msgbox "Activ VHost used allready SSL, aborted" --stdout 20 70
-		MENU
+		DNS=$(openssl x509 -text -noout -in /etc/ssl/certs/rutorrent-selfsigned.crt | grep "DNS" | cut -d: -f2)
+		dialog --title "Self Signed certification" --ok-label "Abort" --no-cancel --extra-button --extra-label "Renew cert" --yesno "Activ VHost used allready SSL, aborted" --stdout 20 70
+		EXITCODE=$?
+		# Get exit status
+		# 0 means user hit OK button.
+		# 1 means user hit CANCEL button.
+		# 2 means user hit HELP button.
+		# 3 means user hit EXTRA button.
+		# 255 means user hit [Esc] key.
+		case $EXITCODE in
+		0|1|255)	;;
+		3)			SELF_SIGNED_SSL $DNS;;
+		esac
 	else
 		SELF_SIGNED_SSL $1
 		CONFIGURE_SSL_CONF
@@ -839,10 +850,21 @@ function SELF_SIGNED () {
 }
 
 function LE_SIGNED () {
-	if [[ $(a2query -s | cut -d' ' -f1 | grep -v https_redirect | grep -c -i "SSL") -ne 0 ]]
+	if [[ $(a2query -s | cut -d' ' -f1 | grep -v https_redirect | grep -c -i "LE-SSL") -ne 0 ]]
 	then
-		dialog --title "" --msgbox "Activ VHost used allready SSL, aborted" --stdout 20 70
-		MENU
+		dialog --title "Let's Encrypt certification" --ok-label "Abort" --no-cancel --extra-button --extra-label "Renew cert" --yesno "Activ VHost used allready SSL, aborted" --stdout 20 70
+		EXITCODE=$?
+		# Get exit status
+		# 0 means user hit OK button.
+		# 1 means user hit CANCEL button.
+		# 2 means user hit HELP button.
+		# 3 means user hit EXTRA button.
+		# 255 means user hit [Esc] key.
+		case $EXITCODE in
+		0|1|255)	;;
+		3)			certbot renew 2>&1 | dialog --progressbox 20 70
+					sleep 3;;
+		esac
 	else
 		LET_ENCRYPT_FOR_SSL $1
 		CONFIGURE_HTTPS_REDIRECT_CONF
@@ -851,22 +873,13 @@ function LE_SIGNED () {
 
 function SELF_SIGNED_SSL () {
 	host_information=$(wget -q -O - ipinfo.io/json)
-	#"ip": "89.182.217.121",
-	#"hostname": "a89-182-217-121.net-htp.de",
-	#"city": "Hannover",
-	#"region": "Lower Saxony",
-	#"country": "DE",
-	#"loc": "52.3390,9.8288",
-	#"org": "AS13045 htp GmbH",
-	#"postal": "30539",
-	#"timezone": "Europe/Berlin",
-	#"readme": "https://ipinfo.io/missingauth"
 	
 	C=$(echo "$host_information" | grep "country" | cut -d'"' -f4)
 	ST=$(echo "$host_information" | grep "region" | cut -d'"' -f4)
 	L=$(echo "$host_information" | grep "city" | cut -d'"' -f4)
 	O=$(echo "$host_information" | grep "org" | cut -d'"' -f4)
 	CN=$1
+	DNS=$(echo "$host_information" | grep "ip" | cut -d'"' -f4)
 	
 	#https://9to5answer.com/err_ssl_key_usage_incompatible-solution
 	#keyUsage = keyEncipherment, dataEncipherment
@@ -889,6 +902,7 @@ extendedKeyUsage = serverAuth
 subjectAltName = @alt_names
 [alt_names]
 DNS.1 = $CN
+DNS.2 = $DNS
 EOF
 	
 	openssl req -x509 -config req.conf -extensions 'v3_req' -nodes -days 398 -newkey rsa:4096 -keyout /etc/ssl/private/rutorrent-selfsigned.key -out /etc/ssl/certs/rutorrent-selfsigned.crt 2>&1 | dialog --progressbox 20 70
@@ -985,7 +999,7 @@ function LET_ENCRYPT_FOR_SSL () {
 	a2enmod ssl 1> /dev/null
 	a2enmod headers 1> /dev/null
 	
-	apt-get install -y python3-certbot-apache
+	apt-get install -y python3-certbot-apache 1> /dev/null
 	
 	certbot --apache --rsa-key-size 4096 --must-staple --hsts --uir --staple-ocsp --strict-permissions --register-unsafely-without-email --agree-tos --no-redirect -d "$DOMAIN_NAME" 2>&1 | dialog --progressbox 20 70
 	sed -i 's/31536000/63072000/g' /etc/apache2/sites-available/$CURRENT_CONF-le-ssl.conf
@@ -1490,7 +1504,7 @@ function SCRIPT () {
 	# 255 means user hit [Esc] key.
 	case $EXITCODE in
 	0)
-		# 0 User attribute, 1 Username, 2 User password. 3 Usergroup=Username, 4 User homedir, 5 User SSH status
+		# USER[_] 0 User attribute, 1 Username, 2 User password, 3 Usergroup = Username, 4 User homedir, 5 User SSH status
 		USER[0]="existing"
 		USER[1]=$SELECTED
 		USER[2]=
@@ -1732,7 +1746,7 @@ function INSTALLATION () {
 	echo -e "XXX\n30\nInstall Apache and PHP\nXXX"
 	(time APACHE2) >> $logfile 2>&1
 	
-	# USER[_] 0 User attribute, 1 Username, 2 User password, 3 Usergroup=Username, 4 User homedir, 5 User SSH status
+	# USER[_] 0 User attribute, 1 Username, 2 User password, 3 Usergroup = Username, 4 User homedir, 5 User SSH status
 	if [[ ${USER[0]} == "to_create" ]]
 	then
 		(echo ${USER[2]}; echo ${USER[2]}) | sudo adduser --force-badname --gecos "" ${USER[1]} --quiet 2>> $LOG_REDIRECTION

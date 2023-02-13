@@ -1,9 +1,16 @@
+Version 1.0
+* Since the maximum lifespan of SSL/TLS certificates has been
+  limited to 398 days, added the option to renew the certificate
+  on purpose, for Self Signed and Let's Encrypt
+-----------------------------------------------------------------
+
 Version 0.9 (first public release)
 * Create scripted installation
 * Shorting Menu, with option of expanding
 * Correcting Changelog look in dialog
 * Add Installationlog to Script
-* Having rtorrent Basedir inside home rtorrent user is now optional
+* Having rtorrent Basedir inside home rtorrent user is
+  now optional
 * Add WebAuth to Menu
 -----------------------------------------------------------------
 
