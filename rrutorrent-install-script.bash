@@ -7,6 +7,16 @@ fullmenu=false
 logfile=install.log
 LOG_REDIRECTION="/dev/null"
 #LOG_REDIRECTION=$logfile
+# Script versionnumber
+script_versionumber=1.2
+# Window dimensions
+height=20
+small_height=6
+width=70
+# Window position
+x=2
+small_x=8
+y=5
 
 #system
 architecture=$(dpkg --print-architecture)
@@ -110,22 +120,30 @@ function MENU {
 	if [ -f $logfile ]
 	then
 		menu_options+=("L" "Show Installation log")
-	fi 
+	fi
 	
 	if $fullmenu
 	then
-		menu_options+=("3" "SELECT_USER"
+		menu_options+=("9" "Add User"
+		               "6" "Remove User"
 		               "4" "Allow SSH"
 		               "5" "Deny SSH"
-		               "6" "Remove User"
 		               "7" "Install webserver & php"
-		               "8" "Install rtorrent on User $(who am i | cut -d" " -f1)"
-		               "E" "Edit rtorrent.rc"
-		               "Z" "Install Complete"
-		               "N" "Script")
+		               "8" "Install rtorrent on User \Z4$(who am i | cut -d" " -f1)\Zn"
+		               "E" "Edit rtorrent.rc on User \Z4$(who am i | cut -d" " -f1)\Zn")
 	fi
 	
-	SELECTED=$(dialog --title "Menu" --cancel-label "Exit" --stdout --menu "Options" 20 70 12 "${menu_options[@]}")
+	#	               "Z" "Install Complete"
+	#	               "N" "Script")
+	
+	SELECTED=$(dialog \
+	--backtitle "rtorrent & ruTorrent Installation Script V$script_versionumber" \
+	--title "Menu" \
+	--stdout \
+	--begin $x $y \
+	--colors \
+	--cancel-label "Exit" \
+	--menu "Options" $height $width 12 "${menu_options[@]}")
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -140,12 +158,13 @@ function MENU {
 }
 
 function EXIT {
+	echo ""
 	echo "goodbye!"
 	exit 0
 }
 
 function INSTALLLOG {
-	dialog --title "Installation log" --extra-button --extra-label "Remove Log" --no-collapse --textbox $logfile 20 70
+	dialog --title "Installation log" --stdout --begin $x $y --ok-label "Exit" --extra-button --extra-label "Remove Log" --no-collapse --textbox $logfile $height $width
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -165,30 +184,32 @@ function MENU_OPTIONS () {
 	0)	HEADER;;
 	1)	LICENSE;;
 	2)	CHANGELOG;;
-	3)	SELECT_USER;;
-	4)	ALLOW_SSH;;
-	5)	DENY_SSH;;
-	6)	REMOVE_USER;;
-	7)	APACHE2;;
-	8)	RTORRENT_LOCAL "$(who am i | cut -d" " -f1)";;
+	I)	SCRIPTED_INSTALL;;
 	R)	UPDATE_RUTORRENT;;
 	V)	CHANGE_VHOST;;
+	S)	SSL_FOR_WEBSERVER;;
 	W)	WEBAUTH_TOGGLE;;
 	A)	ADD_USER_TO_WEBAUTH;;
 	U)	REMOVE_WEBAUTH_USER;;
-	E)	EDIT_RTORRENTRC "$(who am i | cut -d" " -f1)";;
-	S)	SSL_FOR_WEBSERVER;;
-	Z)	INSTALL_COMPLETE;;
-	I)	SCRIPTED_INSTALL;;
-	N)	SCRIPT;;
 	L)	INSTALLLOG;;
+	9)	ADD_USER;;
+	6)	REMOVE_USER;;
+	4)	ALLOW_SSH;;
+	5)	DENY_SSH;;
+	7)	APACHE2;;
+	8)	RTORRENT_LOCAL "$(who am i | cut -d" " -f1)";;
+	E)	EDIT_RTORRENTRC "$(who am i | cut -d" " -f1)";;
+	Z)	INSTALL_COMPLETE;;
+	N)	SCRIPT;;
+	3)	SELECT_USER;;
 	esac
 }
 
 function HEADER {
 	dialog \
-	--title "Installing rtorrent and ruTorrent" \
+	--title "System Information" \
 	--stdout \
+	--begin $x $y \
 	--colors \
 	--msgbox "\
 System:\n\
@@ -207,7 +228,7 @@ Software Versions:\n\
    Python:                 \Z4$python_version\Z0\n\
    Apache2:                \Z4$apache2_version\Z0\n\
    PHP                     \Z4$php_version\Z0"\
-    20 70
+    $height $width
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -225,6 +246,7 @@ function LICENSE {
 	dialog \
 	--title "Licence" \
 	--stdout \
+	--begin $x $y \
 	--colors \
 	--msgbox "\
 \n\
@@ -238,7 +260,7 @@ function LICENSE {
  Contact me? use Github\n\
 \n\
  © Poul-Henning Kamp's beerware license."\
-	20 70
+	$height $width
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -255,7 +277,7 @@ function LICENSE {
 function CHANGELOG {
 	#https://superuser.com/questions/802650/make-a-web-request-cat-response-to-stdout
 	link=$(wget -q -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/changelog)
-	dialog --title "Changelog" --no-collapse --msgbox --stdout "$link" 20 70
+	dialog --title "Changelog" --stdout --begin $x $y --no-collapse --msgbox "$link" $height $width
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -289,9 +311,10 @@ function SELECT_USER () {
 	SELECTED=$(dialog \
 	--title "Select rtorrent User" \
 	--stdout \
+	--begin $x $y \
 	--extra-button \
 	--extra-label "Add User"\
-	--radiolist "Select User" 20 70 13 "${USERS[@]}")
+	--radiolist "Select User" $height $width 13 "${USERS[@]}")
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -321,11 +344,12 @@ function ADD_USER () {
 	OUTPUT=$(dialog \
 	--title "New User" \
 	--stdout \
+	--begin $x $y \
 	--insecure "$@" \
 	--trim \
 	--output-separator $separator \
 	--mixedform "Create new User for rtorrent" \
-	20 70 0 \
+	$height $width 0 \
 	"Username          :" 1 1 ""    1 21 12 0 0 \
 	"Password          :" 2 1 ""    2 21 10 0 1 \
 	"Retype Password   :" 3 1 ""    3 21 10 0 1 \
@@ -347,6 +371,7 @@ function ADD_USER () {
 	0)		CREATE_USER "${SHOWN[@]}";;
 	1|255)	;;
 	esac
+	MENU
 }
 
 function CREATE_USER () {
@@ -385,13 +410,12 @@ function CREATE_USER () {
 	then
 		dialog --title "Error" \
 		--stdout \
+		--begin $small_x $y \
 		--msgbox "\
 $answer1\n\
-$answer2\n\
-\n\
-Please try again\n\
-"\
-		20 70
+$answer2\
+		"\
+		$small_height $width
 		EXITCODE=$?
 		# Get exit status
 		# 0 means user hit OK button.
@@ -404,7 +428,6 @@ Please try again\n\
 		esac
 	else
 		(echo ${arr[1]}; echo ${arr[1]}) | sudo adduser --force-badname --gecos "" ${arr[0]} --quiet 2> /dev/null
-		dialog --title "Done" --msgbox "\nNew User ${arr[0]} created" --stdout 20 70
 		#https://stackoverflow.com/questions/11392189/how-can-i-convert-a-string-from-uppercase-to-lowercase-in-bash
 		if [ "${arr[3],,}" == "no" ];
 		then
@@ -416,8 +439,9 @@ Please try again\n\
 			else
 				sudo sed -i '$aDenyUsers\t'"$1"'' /etc/ssh/sshd_config
 			fi
-		systemctl restart ssh
+			systemctl restart ssh
 		fi
+		dialog --title "Done" --stdout --begin $small_x $y --msgbox "\nNew User ${arr[0]} created" $small_height $width
 	fi
 }
 
@@ -437,7 +461,7 @@ function ALLOW_SSH () {
 		full="$variablenname$last"
 		IFS='"' read -a DENYLISTUSERS <<< "$full"
 		
-		SELECTED=$(dialog --title "Remove User from SSH DenyUsers List" --radiolist --stdout "Select User" 20 70 13 "${DENYLISTUSERS[@]}")
+		SELECTED=$(dialog --title "Remove User from SSH DenyUsers List" --stdout --begin $x $y --radiolist "Select User" $height $width 13 "${DENYLISTUSERS[@]}")
 		EXITCODE=$?
 		# Get exit status
 		# 0 means user hit OK button.
@@ -459,15 +483,15 @@ function ALLOW_SSH () {
 				#https://serverfault.com/questions/477503/check-if-array-is-empty-in-bash
 				if [ "$(echo -ne ${DENYLIST_NEW} | wc -m)" -eq 0 ]
 				then
-					echo "Array is empty"
+					#echo "Array is empty"
 					sudo sed -i '/^DenyUsers/d' /etc/ssh/sshd_config
 				fi
 				systemctl restart ssh
-				dialog --title "Removed User" --stdout --msgbox "User $SELECTED removed from DenyUsers List" 20 70;;
+				dialog --title "Done" --stdout --begin $small_x $y --msgbox "User $SELECTED removed from DenyUsers List" $small_height $width;;
 		1|255)	;;
 		esac
 	else
-		dialog --title "DenyUsers not existent" --stdout --msgbox "No User to allow" 8 70
+		dialog --title "Error" --stdout --begin $small_x $y --msgbox "DenyUsers does not exist" $small_height $width
 	fi
 	MENU
 }
@@ -481,7 +505,6 @@ function DIFF_USERS () {
 	
 	#https://stackoverflow.com/questions/454427/string-difference-in-bash
 	diff=$(comm -23 <(tr ' ' $'\n' <<< $user | sort) <(tr ' ' $'\n' <<< $present2 | sort))
-	
 	#echo $diff
 }
 
@@ -500,10 +523,7 @@ function DENY_SSH () {
 	full="$variablenname$end"
 	IFS='"' read -a USERS <<< "$full"
 	
-	SELECTED=$(dialog \
-	--title "Remove SSH from User" \
-	--stdout \
-	--radiolist "Add User to SSH DenyUsers List" 20 70 13 "${USERS[@]}")
+	SELECTED=$(dialog --title "Remove SSH from User" --stdout --begin $x $y --radiolist "Add User to SSH DenyUsers List" $height $width 13 "${USERS[@]}")
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -524,12 +544,14 @@ function DENY_SSH_FORM_USER () {
 		present=$(grep "^DenyUsers" /etc/ssh/sshd_config)
 		if grep -q $1 <<< "$present";
 		then
-			dialog --title "" --msgbox "User is allready denyed" --stdout 20 70
+			dialog --title "Error" --stdout --begin $small_x $y --msgbox "User $1 is allready denyed from SSH" $small_height $width
 		else
 			sudo sed -i 's/^DenyUsers.*/'"$present"' '"$1"'/g' /etc/ssh/sshd_config
+			dialog --title "Done" --stdout --begin $small_x $y --msgbox "User $1 is now denyed from SSH" $small_height $width
 		fi
 	else
 		sudo sed -i '$aDenyUsers\t'"$1"'' /etc/ssh/sshd_config
+		dialog --title "Done" --stdout --begin $small_x $y --msgbox "User $1 is now denyed from SSH" $small_height $width
 	fi
 	systemctl restart ssh
 }
@@ -542,10 +564,7 @@ function REMOVE_USER () {
 	full="$variablenname$end"
 	IFS='"' read -a USERS <<< "$full"
 	
-	SELECTED=$(dialog \
-	--title "Remove Linux User" \
-	--stdout \
-	--radiolist "Select User" 20 70 13 "${USERS[@]}")
+	SELECTED=$(dialog --title "Remove Linux User" --stdout --begin $x $y --radiolist "Select User" $height $width 13 "${USERS[@]}")
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -564,7 +583,7 @@ function DEL_USER () {
 	if [ $(id -u $1) == "$low" ]
 	then
 		#echo "first user"
-		dialog --title "" --msgbox "Won't delete first User" --stdout 20 70
+		dialog --title "Error" --begin $small_x $y --stdout --msgbox "Won't delete first User" $small_height $width
 	else
 		#echo "someone else"
 		userdel -f -r $1 >& /dev/null
@@ -597,6 +616,7 @@ function DEL_USER () {
 		else
 			:
 		fi
+		dialog --title "Done" --stdout --begin $small_x $y --msgbox "User $1 deleted" $small_heightheight $width
 	fi
 }
 
@@ -617,9 +637,9 @@ function RTORRENT_LOCAL () {
 	RTORRENT $1
 	EDIT_RTORRENTRC $1
 	
-	systemctl enable rtorrent.service
-	systemctl start rtorrent.service
-	systemctl status rtorrent.service --no-pager
+	systemctl enable rtorrent.service 1> /dev/null
+	systemctl start rtorrent.service 1> /dev/null
+	systemctl status rtorrent.service --no-pager 1> /dev/null
 	MENU
 }
 
@@ -706,28 +726,51 @@ EOF
 }
 
 function EDIT_RTORRENTRC () {
-	arr[0]=$(getent passwd "$1" | cut -d: -f6)
-	arr[1]=$(grep 'port_range.set' ${arr[0]}/.rtorrent.rc | cut -d' ' -f3)
-	arr[2]=$(echo ${arr[1]} | cut -d'-' -f1)
-	arr[3]=$(echo ${arr[1]} | cut -d'-' -f2)
-	arr[4]=$(grep 'port_random.set' ${arr[0]}/.rtorrent.rc | cut -d' ' -f3)
-	arr[5]=$(grep 'method.insert = cfg.basedir' ${arr[0]}/.rtorrent.rc | cut -d'"' -f2 | rev | cut -d'/' -f3- | rev)
+	# USER[_]
+	# 0 User attribute, 1 Username, 2 User password, 3 Usergroup = Username, 4 User homedir, 5 User SSH status
+	USER[0]=
+	USER[1]=$1
+	USER[2]=
+	USER[3]=$(grep "$(id -u $1)" /etc/group | cut -d":" -f1)
+	USER[4]=$(getent passwd "$1" | cut -d: -f6)
+	USER[5]=
+	# 6 Portrange, 7 Portrange min, 8 Portrange max, 9 Randomportset, 10 rtorrent basedir
+	USER[6]=$(grep 'port_range.set' ${USER[4]}/.rtorrent.rc | cut -d' ' -f3)
+	USER[7]=$(echo ${USER[6]} | cut -d'-' -f1)
+	USER[8]=$(echo ${USER[6]} | cut -d'-' -f2)
+	USER[9]=$(grep 'port_random.set' ${USER[4]}/.rtorrent.rc | cut -d' ' -f3)
+	USER[10]=$(grep 'method.insert = cfg.basedir' ${USER[4]}/.rtorrent.rc | cut -d'"' -f2 | rev | cut -d'/' -f3- | rev)
+	# 11 new Portrange, 12 new Portrange min, 13 new Portrange max, 14 new Randomportset, 15 new rtorrent basedir
+	USER[11]=$(grep 'port_range.set' ${USER[4]}/.rtorrent.rc | cut -d' ' -f3)
+	USER[12]=$(echo ${USER[6]} | cut -d'-' -f1)
+	USER[13]=$(echo ${USER[6]} | cut -d'-' -f2)
+	USER[14]=$(grep 'port_random.set' ${USER[4]}/.rtorrent.rc | cut -d' ' -f3)
+	USER[15]=$(grep 'method.insert = cfg.basedir' ${USER[4]}/.rtorrent.rc | cut -d'"' -f2 | rev | cut -d'/' -f3- | rev)
 	
-	CHANGE_RTORRENTRC "${arr[@]}"
+	CHANGE_RTORRENTRC "${USER[@]}"
+	systemctl restart rtorrent.service 1> /dev/null
+	MENU
 }
 
 function CHANGE_RTORRENTRC () {
 	arr=("$@")
-	HOMEDIR=${arr[0]}
-	PORT_RANGE=${arr[1]}
-	PORT_RANGE_MIN=${arr[2]}
-	PORT_RANGE_MAX=${arr[3]}
-	PORT_SET=${arr[4]}
-	DLFOLDER=${arr[5]}
+	HOMEDIR=${arr[4]}
+	PORT_RANGE=${arr[6]}
+	PORT_RANGE_MIN=${arr[7]}
+	PORT_RANGE_MAX=${arr[8]}
+	PORT_SET=${arr[9]}
+	DLFOLDER=${arr[10]}
+	
+	NEW_PORT_RANGE=${arr[11]}
+	NEW_PORT_RANGE_MIN=${arr[12]}
+	NEW_PORT_RANGE_MAX=${arr[13]}
+	NEW_PORT_SET=${arr[14]}
+	NEW_DLFOLDER=${arr[15]}
 	
 	OUTPUT=$(dialog \
 	--title "Edit rtorrent.rc" \
 	--stdout \
+	--begin $x $y \
 	--trim \
 	--extra-button \
 	--extra-label "Change Basedir" \
@@ -742,11 +785,11 @@ function CHANGE_RTORRENTRC () {
 	     ├── log \n
 	     └── watch \n
 	"\
-	20 70 0 \
-	"Port Range                    :" 1 1  " $PORT_RANGE_MIN" 1 33  6 0 0 \
-	"-"                               1 39 " $PORT_RANGE_MAX" 1 40  6 0 0 \
-	"Random Listening Port (yes/no):" 2 1  "$PORT_SET"        2 33  5 0 0 \
-	"rtorrent Basedir              :" 3 1  "$DLFOLDER"        3 33 31 0 2 \
+	$height $width 0 \
+	"Port Range                    :" 1 1  " $NEW_PORT_RANGE_MIN" 1 33  6 0 0 \
+	"-"                               1 39 " $NEW_PORT_RANGE_MAX" 1 40  6 0 0 \
+	"Random Listening Port (yes/no):" 2 1  "$NEW_PORT_SET"        2 33  5 0 0 \
+	"rtorrent Basedir              :" 3 1  "$NEW_DLFOLDER"        3 33 31 0 2 \
 	)
 	EXITCODE=$?
 	#echo $OUTPUT
@@ -757,7 +800,12 @@ function CHANGE_RTORRENTRC () {
 	NEW_PORT_RANGE="${SHOWN[0]}-${SHOWN[1]}"
 	SELECTED="${SHOWN[2]}"
 	NEW_DLFOLDER="${SHOWN[3]}"
-	SHOWN[4]=$HOMEDIR
+	
+	arr[11]=$NEW_PORT_RANGE
+	arr[12]=${SHOWN[0]}
+	arr[13]=${SHOWN[1]}
+	arr[14]=${SHOWN[2]}
+	
 	# Get exit status
 	# 0 means user hit OK button.
 	# 1 means user hit CANCEL button.
@@ -767,26 +815,21 @@ function CHANGE_RTORRENTRC () {
 	case $EXITCODE in
 	0)		sed -i '/port_range.set/ s/'"$PORT_RANGE"'/'"$NEW_PORT_RANGE"'/' $HOMEDIR/.rtorrent.rc
 			sed -i '/port_random.set/ s/'"$PORT_SET"'/'"$SELECTED"'/' $HOMEDIR/.rtorrent.rc
-			sed -i 's#'"$DLFOLDER"'#'"$NEW_DLFOLDER"'#' $HOMEDIR/.rtorrent.rc;;
+			sed -i 's#'"$DLFOLDER"'#'"$NEW_DLFOLDER"'#' $HOMEDIR/.rtorrent.rc
+			chown -R ${arr[1]}:${arr[3]} $NEW_DLFOLDER;;
 	1|255)	;;
-	3)		CHANGE_DLFOLDER "${SHOWN[@]}";;
+	3)		CHANGE_DLFOLDER "${arr[@]}";;
 	esac
-	MENU
 }
 
 function CHANGE_DLFOLDER () {
 	arr=("$@")
 	
-	RETURN=$(dialog --stdout --dselect "${arr[3]}" 20 70)
+	RETURN=$(dialog --stdout --begin $x $y --dselect "${arr[15]}" $height $width)
 	EXITCODE=$?
 	RETURN=$(echo "$RETURN" | sed 's:/*$::')
 	
-	new_arr[0]=${arr[4]}
-	new_arr[1]=
-	new_arr[2]=${arr[0]}
-	new_arr[3]=${arr[1]}
-	new_arr[4]=${arr[2]}
-	new_arr[5]=$RETURN
+	arr[15]=$RETURN
 	# Get exit status
 	# 0 means user hit OK button.
 	# 1 means user hit CANCEL button.
@@ -794,7 +837,7 @@ function CHANGE_DLFOLDER () {
 	# 3 means user hit EXTRA button.
 	# 255 means user hit [Esc] key.
 	case $EXITCODE in
-	0)   	CHANGE_RTORRENTRC "${new_arr[@]}";;
+	0)   	CHANGE_RTORRENTRC "${arr[@]}";;
 	1|255)	;;
 	esac
 }
@@ -804,12 +847,12 @@ function SSL_FOR_WEBSERVER () {
 	OUTPUT=$(dialog \
 	--title "Webadress" \
 	--stdout \
+	--begin $x $y \
 	--trim \
 	--ok-label "Self Signed" \
 	--extra-button \
 	--extra-label "Let's Encrypt" \
-	--inputbox "Enter the Domain Name for the Webpage and choose the SSL Certificate" 20 70 $dummy_hostname \
-	)
+	--inputbox "Enter the Domain Name for the Webpage and choose the SSL Certificate" $height $width $dummy_hostname)
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -828,8 +871,8 @@ function SSL_FOR_WEBSERVER () {
 function SELF_SIGNED () {
 	if [[ $(a2query -s | cut -d' ' -f1 | grep -v https_redirect | grep -c -i "SS-SSL") -ne 0 ]]
 	then
-		DNS=$(openssl x509 -text -noout -in /etc/ssl/certs/rutorrent-selfsigned.crt | grep "DNS" | cut -d: -f2)
-		dialog --title "Self Signed certification" --ok-label "Abort" --no-cancel --extra-button --extra-label "Renew cert" --yesno "Activ VHost used allready SSL, aborted" --stdout 20 70
+		DNS=$(openssl x509 -text -noout -in /etc/ssl/certs/rutorrent-selfsigned.crt | grep "DNS" | cut -d: -f2 | cut -d, -f1)
+		dialog --title "Self Signed certification" --stdout --begin $small_x $y --ok-label "Abort" --no-cancel --extra-button --extra-label "Renew cert" --yesno "Activ VHost used allready SSL, aborted" $small_height $width
 		EXITCODE=$?
 		# Get exit status
 		# 0 means user hit OK button.
@@ -853,7 +896,7 @@ function SELF_SIGNED () {
 function LE_SIGNED () {
 	if [[ $(a2query -s | cut -d' ' -f1 | grep -v https_redirect | grep -c -i "LE-SSL") -ne 0 ]]
 	then
-		dialog --title "Let's Encrypt certification" --ok-label "Abort" --no-cancel --extra-button --extra-label "Renew cert" --yesno "Activ VHost used allready SSL, aborted" --stdout 20 70
+		dialog --title "Let's Encrypt certification" --stdout --begin $small_x $y --ok-label "Abort" --no-cancel --extra-button --extra-label "Renew cert" --yesno "Activ VHost used allready SSL, aborted" $small_height $width
 		EXITCODE=$?
 		# Get exit status
 		# 0 means user hit OK button.
@@ -863,7 +906,7 @@ function LE_SIGNED () {
 		# 255 means user hit [Esc] key.
 		case $EXITCODE in
 		0|1|255)	;;
-		3)			certbot renew 2>&1 | dialog --progressbox 20 70
+		3)			certbot renew 2>&1 | dialog --stdout --begin $x $y --progressbox $height $width
 					sleep 3;;
 		esac
 	else
@@ -906,7 +949,7 @@ DNS.1 = $CN
 DNS.2 = $DNS
 EOF
 	
-	openssl req -x509 -config req.conf -extensions 'v3_req' -nodes -days 398 -newkey rsa:4096 -keyout /etc/ssl/private/rutorrent-selfsigned.key -out /etc/ssl/certs/rutorrent-selfsigned.crt 2>&1 | dialog --progressbox 20 70
+	openssl req -x509 -config req.conf -extensions 'v3_req' -nodes -days 398 -newkey rsa:4096 -keyout /etc/ssl/private/rutorrent-selfsigned.key -out /etc/ssl/certs/rutorrent-selfsigned.crt 2>&1 | dialog --stdout --begin $x $y --progressbox $height $width
 	
 	rm -f req.conf
 	#https://stackoverflow.com/questions/58712760/how-to-hide-the-cursor-in-a-terminal-during-a-script-and-restore-it-back-to-norm
@@ -1002,7 +1045,7 @@ function LET_ENCRYPT_FOR_SSL () {
 	
 	apt-get install -y python3-certbot-apache 1> /dev/null
 	
-	certbot --apache --rsa-key-size 4096 --must-staple --hsts --uir --staple-ocsp --strict-permissions --register-unsafely-without-email --agree-tos --no-redirect -d "$DOMAIN_NAME" 2>&1 | dialog --progressbox 20 70
+	certbot --apache --rsa-key-size 4096 --must-staple --hsts --uir --staple-ocsp --strict-permissions --register-unsafely-without-email --agree-tos --no-redirect -d "$DOMAIN_NAME" 2>&1 | dialog --stdout --begin $x $y --progressbox $height $width
 	sed -i 's/31536000/63072000/g' /etc/apache2/sites-available/$CURRENT_CONF-le-ssl.conf
 	
 	tput civis
@@ -1015,13 +1058,14 @@ function LET_ENCRYPT_FOR_SSL () {
 }
 
 function UPDATE_RUTORRENT () {
+	dialog  --stdout --begin $small_x $y --infobox "searching for rtorrent (rpc.socket)..." $small_height $width
 	file=rpc.socket
 	GREP_RPCSOCKET=$(find / -name $file)
 	LINES=$(find / -name $file | grep -c $file)
 	
 	if [ -z "$GREP_RPCSOCKET" ]
 	then
-		dialog --title "Error" --stdout --msgbox "No rtorrent installed (no rpc.socket found)" 20 70
+		dialog --title "Error" --stdout --begin $x $y --msgbox "No rtorrent installed (no rpc.socket found)" $height $width
 	else
 		#echo "\$var is NOT empty"
 		if [ $LINES -eq 1 ]
@@ -1035,7 +1079,7 @@ function UPDATE_RUTORRENT () {
 			full="$variablenname$last"
 			IFS='"' read -a RPCSOCKET <<< "$full"
 			
-			BASEDIR=$(dialog --title "Found RPC Socket" --stdout --radiolist "found RPC Socket" 20 70 10 "${RPCSOCKET[@]}")
+			BASEDIR=$(dialog --title "Found RPC Socket" --stdout --begin $x $y --radiolist "found RPC Socket" 20 70 10 "${RPCSOCKET[@]}")
 			EXITCODE=$?
 			BASEDIR=$(echo $BASEDIR | rev | cut -d'/' -f4- | rev)
 			#echo $EXITCODE
@@ -1064,7 +1108,7 @@ function MENU_RUTORRENT () {
 	full="$variablenname$last"
 	IFS='"' read -a RU_VERSIONS <<< "$full"
 	
-	SELECTED=$(dialog --title "Choose ruTorrent Version" --stdout --radiolist "ruTorrent Versions" 20 70 10 "${RU_VERSIONS[@]}")
+	SELECTED=$(dialog --title "Choose ruTorrent Version" --stdout --begin $x $y --radiolist "ruTorrent Versions" 20 70 10 "${RU_VERSIONS[@]}")
 	EXITCODE=$?
 	#echo $EXITCODE
 	#echo $SELECTED
@@ -1087,10 +1131,10 @@ function INSTALL_RUTORRENT () {
 	if [ -z "$1" ]
 	then
 		#echo "\$1 is empty"
-		dialog --title "Error" --stdout --msgbox "No ruTorrent was choosen" 8 70
+		dialog --title "Error" --stdout --begin $small_x $y --msgbox "No ruTorrent Version was choosen" $small_height $width
 	else
 		SELECTED=$1
-		SELECTED_CUT=
+		#SELECTED_CUT=
 		SELECTED_CUT="ruTorrent-${SELECTED:1}"
 		
 		cd /var/www
@@ -1180,7 +1224,7 @@ function CHANGE_VHOST () {
 	ALL_VHOST_NO_SPACE=$(echo $ALL_VHOST | sed 's/ //g')
 	IFS='"' read -a VHOSTS <<< "$ALL_VHOST_NO_SPACE"
 	
-	SELECTED=$(dialog --title "Change VHost" --stdout --radiolist "current VHost (*)" 20 70 13 "${VHOSTS[@]}")
+	SELECTED=$(dialog --title "Change VHost" --stdout --begin $x $y --radiolist "current VHost (*)" $height $width 13 "${VHOSTS[@]}")
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -1228,8 +1272,9 @@ function WEBAUTH_TOGGLE {
 	SELECTED=$(dialog \
 	--title "Web Authentication On/Off" \
 	--stdout \
+	--begin $x $y \
 	--no-tags \
-	--radiolist "current Webauth status (*) on VHost $CURRENT_CONF" 20 70 2 "${AUTH[@]}")
+	--radiolist "current Webauth status (*) on VHost $CURRENT_CONF" $height $width 2 "${AUTH[@]}")
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -1261,11 +1306,12 @@ function ADD_USER_TO_WEBAUTH () {
 	OUTPUT=$(dialog \
 	--title "Webauth User" \
 	--stdout \
+	--begin $x $y \
 	--insecure "$@" \
 	--trim \
 	--output-separator $separator \
 	--mixedform "Add User to Webauth on VHost $CURRENT_CONF" \
-	20 70 0 \
+	$height $width 0 \
 	"Username          :" 1 1 ""    1 21 12 0 0 \
 	"Password          :" 2 1 ""    2 21 10 0 1 \
 	"Retype Password   :" 3 1 ""    3 21 10 0 1 \
@@ -1335,13 +1381,12 @@ function CREATE_WEBAUTH_USER () {
 	then
 		dialog --title "Error" \
 		--stdout \
+		--begin $small_x $y \
 		--msgbox "\
 $answer1\n\
-$answer2\n\
-\n\
-Please try again\n\
-"\
-		20 70
+$answer2
+		"\
+		$small_height $width
 		EXITCODE=$?
 		# Get exit status
 		# 0 means user hit OK button.
@@ -1381,7 +1426,7 @@ EOF
 		chown -R www-data.www-data /var/www/$TARGET/.ht*
 		
 		systemctl reload apache2.service
-		dialog --title "Done" --msgbox "\nNew User ${arr[0]} created" --stdout 20 70
+		dialog --title "Done" --stdout --begin $x $y --msgbox "\nNew User ${arr[0]} created" $height $width
 	fi
 }
 
@@ -1401,7 +1446,7 @@ function REMOVE_WEBAUTH_USER {
 	full="$actual_web_user$last"
 	IFS='"' read -a ACTUAL_USERS <<< "$full"
 	
-	SELECTED=$(dialog --title "Remove User from Webauth" --stdout --radiolist "Remove User from VHost $CURRENT_CONF" 20 70 13 "${ACTUAL_USERS[@]}")
+	SELECTED=$(dialog --title "Remove User from Webauth" --stdout --begin $x $y --radiolist "Remove User from VHost $CURRENT_CONF" $height $width 13 "${ACTUAL_USERS[@]}")
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -1427,17 +1472,17 @@ function REMOVE_USER_FROM_WEBAUTH_AUTH () {
 	
 	if [ -z "$1" ]
 	then
-		dialog --title "Error" --stdout --msgbox "Empty User Name" 8 70
+		dialog --title "Error" --stdout --begin $small_x $y --msgbox "No WebAuth User was choosen" $small_height $width
 	else
 		#https://stackoverflow.com/questions/10319745/redirecting-command-output-to-a-variable-in-bash-fails
 		response=$(htpasswd -D /var/www/$TARGET/.htpasswd $1 2>&1)
 		
-		dialog --title "Done" --stdout --msgbox "$response" 8 70
+		dialog --title "Done" --stdout --begin $small_x $y --msgbox "$response" $small_height $width
 	fi
 }
 
 function SCRIPTED_INSTALL () {
-	dialog --title "Scripted Installation" --colors --yesno --stdout "\
+	dialog --title "Scripted Installation" --stdout --begin $x $y --colors --yesno "\
 The scripted installation ask you some questions about the\n\
 user for rtorrent, the ruTorrent version and other stuff,\n\
 after that you will see a list with all you have selected.\n\
@@ -1460,7 +1505,7 @@ add SSL-Protocol or WebAuth to your ruTorrent Webpage\n\
 \n\
 There would a logfile created to show what happend\n\
 "\
-	20 70
+	$height $width
 	EXITCODE=$?
 	#echo $EXITCODE
 	# Get exit status
@@ -1494,9 +1539,10 @@ function SCRIPT () {
 	SELECTED=$(dialog \
 	--title "Select rtorrent User" \
 	--stdout \
+	--begin $x $y \
 	--extra-button \
-	--extra-label "Add User"\
-	--radiolist "Select User" 20 70 13 "${USERS[@]}")
+	--extra-label "Add User" \
+	--radiolist "Select User" $height $width 13 "${USERS[@]}")
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -1520,11 +1566,12 @@ function SCRIPT () {
 		OUTPUT=$(dialog \
 		--title "New User" \
 		--stdout \
+		--begin $x $y \
 		--insecure "$@" \
 		--trim \
 		--output-separator $separator \
 		--mixedform "Create new User for rtorrent" \
-		20 70 0 \
+		$height $width 0 \
 		"Username          :" 1 1 ""    1 21 12 0 0 \
 		"Password          :" 2 1 ""    2 21 10 0 1 \
 		"Retype Password   :" 3 1 ""    3 21 10 0 1 \
@@ -1568,13 +1615,12 @@ function SCRIPT () {
 			then
 				dialog --title "Error" \
 				--stdout \
+				--begin $small_x $y \
 				--msgbox "\
 $answer1\n\
-$answer2\n\
-\n\
-Please try again\n\
-"\
-				20 70
+$answer2
+				"\
+				$small_height $width
 				EXITCODE=$?
 				# Get exit status
 				# 0 means user hit OK button.
@@ -1607,6 +1653,7 @@ Please try again\n\
 	OUTPUT=$(dialog \
 	--title "Edit rtorrent.rc" \
 	--stdout \
+	--begin $x $y \
 	--trim \
 	--extra-button \
 	--extra-label "Change Basedir" \
@@ -1622,7 +1669,7 @@ Please try again\n\
 	     ├── log \n
 	     └── watch \n
 	"\
-	20 70 0 \
+	$height $width 0 \
 	"Port Range                    :" 1 1  " $PORT_RANGE_MIN" 1 33  6 0 0 \
 	"-"                               1 39 " $PORT_RANGE_MAX" 1 40  6 0 0 \
 	"Random Listening Port (yes/no):" 2 1  "$PORT_SET"        2 33  5 0 0 \
@@ -1641,14 +1688,14 @@ Please try again\n\
 	# 255 means user hit [Esc] key.
 	case $EXITCODE in
 	0)
-		# 0 Portrange, 1 random port set, 2 rtorrent basedir
+		# RC[_] 0 Portrange, 1 random port set, 2 rtorrent basedir
 		RC[0]="${SHOWN[0]}-${SHOWN[1]}"
 		RC[1]="${SHOWN[2]}"
 		RC[2]="${SHOWN[3]}"
 		;;
 	1|255)	MENU;;
 	3)
-		RETURN=$(dialog --stdout --dselect "$DLFOLDER" 20 70)
+		RETURN=$(dialog --stdout --dselect "$DLFOLDER" $height $width)
 		EXITCODE=$?
 		#https://stackoverflow.com/questions/9018723/what-is-the-simplest-way-to-remove-a-trailing-slash-from-each-parameter
 		RETURN=$(echo "$RETURN" | sed 's:/*$::')
@@ -1660,7 +1707,7 @@ Please try again\n\
 		# 255 means user hit [Esc] key.
 		case $EXITCODE in
 		0)
-			# 0 Portrange, 1 random port set, 2 rtorrent basedir
+			# RC[_] 0 Portrange, 1 random port set, 2 rtorrent basedir
 			RC[0]="${SHOWN[0]}-${SHOWN[1]}"
 			RC[1]="${SHOWN[2]}"
 			RC[2]=$RETURN
@@ -1670,9 +1717,10 @@ Please try again\n\
 	esac
 	
 	VERSIONS[2]="ON"
-	RUTORRENT=$(dialog --title "Choose ruTorrent Version" --stdout --radiolist "ruTorrent Versions" 20 70 10 "${VERSIONS[@]}")
+	RUTORRENT_VERSION=$(dialog --title "Choose ruTorrent Version" --stdout --begin $x $y --radiolist "ruTorrent Versions" $height $width 10 "${VERSIONS[@]}")
 	EXITCODE=$?
 	#echo $EXITCODE
+	#echo $RUTORRENT_VERSION
 	# Get exit status
 	# 0 means user hit OK button.
 	# 1 means user hit CANCEL button.
@@ -1683,7 +1731,7 @@ Please try again\n\
 	0)		SUM;;
 	1|255)	;;
 	esac
-	MENU
+	#MENU
 }
 
 function SUM () {
@@ -1691,7 +1739,7 @@ function SUM () {
 	then
 		Deny_line="SSH Login for rtorrent User        \Z4${USER[5]}\Z0"
 	else
-		if (grep "^DenyUsers" /etc/ssh/sshd_config | grep -c "${USER[1]}")
+		if (grep "^DenyUsers" /etc/ssh/sshd_config | grep -cq "${USER[1]}")
 		then
 			Deny_line="SSH Login for rtorrent User        \Z4no\Z0"
 		else
@@ -1699,7 +1747,7 @@ function SUM () {
 		fi
 	fi
 	
-	dialog --title "Scripted Installation" --colors --stdout --yesno "\
+	dialog --title "Scripted Installation" --stdout --begin $x $y --colors --yesno "\
 Configuration:\n\
 \n\
 rtorrent User                      \Z4${USER[1]}\Z0\n\
@@ -1710,14 +1758,14 @@ rtorrent.rc placed in              \Z4${USER[4]}\Z0\n\
 Portrange                          \Z4${RC[0]}\Z0\n\
 Random Listening port              \Z4${RC[1]}\Z0\n\
 rtorrent Basedir                   \Z4${RC[2]}\Z0\n\
-ruTorrent Version                  \Z4$RUTORRENT\Z0\n\
+ruTorrent Version                  \Z4$RUTORRENT_VERSION\Z0\n\
 \n\
 This Script will install rtorrent and ruTorrent with this\n\
 configuration, rtorrent set all folders within this installation.\n\
 \n\
 The permissons of the rtorrent Basedir will granted to \Z4${USER[1]}\Z0\n\
 "\
-	20 70
+	$height $width
 	EXITCODE=$?
 	#echo $EXITCODE
 	# Get exit status
@@ -1787,10 +1835,10 @@ function INSTALLATION () {
 	
 	echo "Install rutorrent" 1>> $LOG_REDIRECTION
 	echo -e "XXX\n70\nInstall and configure rutorrent\nXXX"
-	(time INSTALL_RUTORRENT $RUTORRENT ${RC[2]}) >> $logfile 2>&1
+	(time INSTALL_RUTORRENT $RUTORRENT_VERSION ${RC[2]}) >> $logfile 2>&1
 	
 	echo -e "XXX\n100\nInstallation complete\nXXX"
-	} | dialog --gauge "Please wait while installing" 6 70 0
+	} | dialog --begin $small_x $y --gauge "Please wait while installing" $small_height $width 0
 	sleep 2
 	INSTALL_COMPLETE
 }
@@ -1801,10 +1849,7 @@ function INSTALL_COMPLETE {
 	HOMEDIR=${USER[4]}
 	BASEDIR=${RC[2]}
 	
-	dialog --title "Installation Complete" \
-	--stdout \
-	--colors \
-	--msgbox "\
+	dialog --title "Installation Complete" --stdout --begin $x $y --colors --msgbox "\
  \Z2Installation is complete.\Z0\n\
 \n\
  The actual Apache2 vhost file has been disabled and replaced\n\
@@ -1825,7 +1870,7 @@ function INSTALL_COMPLETE {
  \Z2LOCAL IP:\Z0    http://$internal_ip/\n\
  \Z2EXTERNAL IP:\Z0 http://$external_ip/\n\
 "\
-	20 70
+	$height $width
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.

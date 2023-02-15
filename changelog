@@ -1,6 +1,13 @@
+Version 1.2
+* Add to Script Version on menu page
+* Cleaning the code, made dialog windows more equally
+* Add some missing response messages
+* Bugfix edit rtorrent.rc (fullmenu)
+-----------------------------------------------------------------
+
 Version 1.1
-* Bugfix "Change VHost" needs a restart if certificats are
-  changed or activated, Renew Self Signed too
+* Bugfix "Change VHost" Apache2 needs a restart if certificats
+  are changed or activated, Renew cert too
 -----------------------------------------------------------------
 
 Version 1.0
