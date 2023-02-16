@@ -38,6 +38,7 @@ This script does not work with the scripts above for upgrades or updates!
   - shows installation log
   - script shows actuall changelog from git
   - will ask by itself for sudo if you start it without
+  - script fully silent
 - ruTorrent
   - ruTorrent can easily updated
   - add python path to rutorrent to support cloudflare (3.9+)
