@@ -1,7 +1,7 @@
 # rru-torrent-install-script
 A menu based rtorrent &amp; rutorrent installation script
 
-![Logo](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/menu.PNG)
+![Logo](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/menu_with_log.PNG)
 
 grep the script file:
 `wget https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-script.bash`
