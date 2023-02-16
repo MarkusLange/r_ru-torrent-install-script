@@ -206,7 +206,9 @@ function MENU_OPTIONS () {
 }
 
 function HEADER {
+	systemupdate=$(stat  /var/cache/apt/ | head -6 | tail -1 | cut -d' ' -f2- | cut -d. -f1)
 	dialog \
+	--backtitle "last systemupdate on $systemupdate" \
 	--title "System Information" \
 	--stdout \
 	--begin $x $y \

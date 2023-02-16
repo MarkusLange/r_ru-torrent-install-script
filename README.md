@@ -32,7 +32,8 @@ This script does not work with the scripts above for upgrades or updates!
   - choose a present user or add a new one for rtorrent
   - script keeps itself actuall (grep users and ruTorrent Version on startup)
   - Web Authenification can de-/activate on will, user can add and remove
-  - SSL support Self Signed or Let's Encrypt
+  - SSL support Self Signed or Let's Encrypt certificate
+  - Since max certifcate duration is 398 days added the option to renew the certificate on purpose, for Self Signed and Let's Encrypt (https://www.ssl.com/blogs/398-day-browser-limit-for-ssl-tls-certificates-begins-september-1-2020/)
   - HTTP to HTTPS redirection
   - shows installation log
   - script shows actuall changelog from git
@@ -49,7 +50,7 @@ This script does not work with the scripts above for upgrades or updates!
 ## To-Do's ##
 - more details
 - add screenshots to readme
-- more screenshots
+- ~~more screenshots~~
 - explain the benefits
 - add links as knowledgebase for everyone
-- tabel of tested Debian based Linux systems
+- table of tested Debian based Linux systems
