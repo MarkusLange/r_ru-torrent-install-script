@@ -1,7 +1,7 @@
 # rru-torrent-install-script
 A menu based rtorrent &amp; rutorrent installation script
 
-![Logo](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/menu.PNG)
+![Logo](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/menu_with_log.PNG)
 
 grep the script file:
 `wget https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-script.bash`
@@ -38,6 +38,7 @@ This script does not work with the scripts above for upgrades or updates!
   - shows installation log
   - script shows actuall changelog from git
   - will ask by itself for sudo if you start it without
+  - script fully silent
 - ruTorrent
   - ruTorrent can easily updated
   - add python path to rutorrent to support cloudflare (3.9+)
