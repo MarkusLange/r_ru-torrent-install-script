@@ -1,3 +1,5 @@
+
+<!--START_SECTION:update_image-->
 # rru-torrent-install-script
 A menu based rtorrent &amp; rutorrent installation script
 
@@ -29,7 +31,6 @@ Installation Summary
 
 Installation Completed
 
-![Scriptet Summery](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/scripted%20installation_complete.PNG)
 
 ## Features ##
 - GUI
@@ -67,3 +68,5 @@ Installation Completed
 - explain the benefits
 - add links as knowledgebase for everyone
 - table of tested Debian based Linux systems
+
+<!--END_SECTION:update_image-->
