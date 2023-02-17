@@ -27,9 +27,9 @@ Installation Summary
 
 ![Scriptet Summery](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/scripted%20installation_summary.PNG)
 
-Installation Complete
+Installation Completed
 
-![Scriptet Complete](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/scripted%20installation_complete.PNG)
+![Scriptet Summery](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/scripted%20installation_complete.PNG)
 
 ## Features ##
 - GUI
@@ -62,7 +62,7 @@ Installation Complete
 
 ## To-Do's ##
 - more details
-- add screenshots to readme
+- ~~add screenshots to readme~~
 - ~~more screenshots~~
 - explain the benefits
 - add links as knowledgebase for everyone
