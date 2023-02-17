@@ -1851,8 +1851,8 @@ function INSTALL_COMPLETE {
 	HOMEDIR=${USER[4]}
 	BASEDIR=${RC[2]}
 	
-	dialog --title "Installation Complete" --stdout --begin $x $y --colors --msgbox "\
- \Z2Installation is complete.\Z0\n\
+	dialog --title "Installation Completed" --stdout --begin $x $y --colors --msgbox "\
+ \Z2Installation is completed.\Z0\n\
 \n\
  The actual Apache2 vhost file has been disabled and replaced\n\
  with a new one. If you were using it, combine the default and\n\
