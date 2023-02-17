@@ -19,6 +19,18 @@ This script is the first of it's kind a GUI based (dialog) installation scrip fo
 
 This script does not work with the scripts above for upgrades or updates!
 
+Scripted Installation
+
+![Scriptet](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/scripted%20installation.PNG)
+
+Installation Summary
+
+![Scriptet Summery](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/scripted%20installation_summary.PNG)
+
+Installation Completed
+
+![Scriptet Summery](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/scripted%20installation_complete.PNG)
+
 ## Features ##
 - GUI
   - full GUI based configuration and installation
@@ -50,7 +62,7 @@ This script does not work with the scripts above for upgrades or updates!
 
 ## To-Do's ##
 - more details
-- add screenshots to readme
+- ~~add screenshots to readme~~
 - ~~more screenshots~~
 - explain the benefits
 - add links as knowledgebase for everyone
