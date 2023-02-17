@@ -31,6 +31,7 @@ Installation Summary
 
 Installation Completed
 
+![Scriptet Complete](https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/c5abf450fd4df653e6f1ea077e88996dc80b5472/screenshots/scripted%20installation_complete.PNG)
 
 ## Features ##
 - GUI
