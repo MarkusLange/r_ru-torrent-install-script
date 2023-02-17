@@ -14,7 +14,7 @@ make it executable:
 start the GUI with:
 `sudo ./rrutorrent-install-script.bash`
 
-This script is the first of it's kind a GUI based (dialog) installation script for rtorrent and rutorrent, it is losely based on the work of:
+This script is the first of it's kind a GUI based (dialog) installation script for rtorrent and rutorrent, it is loosely based on the work of:
 - https://github.com/Kerwood/Rtorrent-Auto-Install
 - https://github.com/Bercik1337/rt-auto-install
 - https://github.com/arakasi72/rtinst
