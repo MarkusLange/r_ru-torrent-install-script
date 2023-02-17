@@ -1858,8 +1858,8 @@ function INSTALL_COMPLETE {
  with a new one. If you were using it, combine the default and\n\
  the ruTorrent vhost file and enable it again.\n\
 \n\
- Your downloads folder is in \Z2$BASEDIR/Downloads\Z0\n\
- Sessions data is in \Z2$BASEDIR/.rtorrent-session\Z0\n\
+ Your downloads folder is in \Z2$BASEDIR/rtorrent/download\Z0\n\
+ Sessions data is in \Z2$BASEDIR/rtorrent/.session\Z0\n\
  rtorrent's configuration file is in \Z2$HOMEDIR/.rtorrent.rc\Z0\n\
 \n\
  If you want to change settings for rtorrent, such as download\n\
