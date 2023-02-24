@@ -34,7 +34,7 @@ Installation Completed
 ## Features ##
 - GUI
   - full GUI based configuration and installation
-  - grep systeminformation by itself
+  - grep system information by itself
   - works on all Debian based Linux systems (apt and systemd are needed)
     - Debian (tested 9+)
     - Ubuntu
@@ -55,10 +55,13 @@ Installation Completed
   - ruTorrent can easily updated
   - add python path to rutorrent to support cloudflare (3.9+)
   - did not use deprecated libapache2-mod-scgi
+  - remove Serversignature from Unauthorized HTML redirect from WebAuth (https://www.inmotionhosting.com/support/server/apache/hide-apache-version-and-linux-os/)
 - rtorrent
   - use of secure open_local instead of open_port from rtorrent with rutorrent (https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC)
   - used latest rtorrent.rc direct from rtorrent github (https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template)
   - used deamon.mode for rtorrent if possible (rtorrent 0.9.7+)
+  - move open_local socket to `/run` and rtorrent basedir to `/srv` (https://ubuntu.com/blog/private-home-directories-for-ubuntu-21-04)
+  - add softlink to homedir of the rtorrrent user from the rtorrent basedir
 
 ## To-Do's ##
 - more details
@@ -67,3 +70,4 @@ Installation Completed
 - explain the benefits
 - add links as knowledgebase for everyone
 - table of tested Debian based Linux systems
+- add window that shows the local installation with all information

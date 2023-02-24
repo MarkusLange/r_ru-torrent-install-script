@@ -8,7 +8,7 @@ logfile=install.log
 LOG_REDIRECTION="/dev/null"
 #LOG_REDIRECTION=$logfile
 # Script versionnumber
-script_versionumber=1.2
+script_versionumber=1.3
 # Window dimensions
 height=20
 small_height=6
@@ -38,7 +38,7 @@ then
 	distributor="$distributor (raspbian)"
 fi
 
-if [[ $distributor == "ubuntu" ]]
+if [[ $distributor == "ubuntu" || $distributor == "linuxmint" ]]
 then
 	debian_version=$(cat /etc/debian_version | cut -d"/" -f1)
 	codename="$codename ($debian_version)"
@@ -56,8 +56,8 @@ python_version_major=${python_version:0:1}
 python_pip=python$python_version_major-pip
 
 #php
-php_version="$(apt-cache policy php | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1)"
-
+#php_version="$(apt-cache policy php | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1)"
+php_version="$(apt-cache policy php | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1-3)"
 #apache2
 apache2_version="$(apt-cache policy apache2 | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1)"
 
@@ -100,7 +100,8 @@ function SCRIPT_BASE_INSTALL {
 		then
 			base1=wget
 		fi
-		apt-get -y install $base0 $base1 1> /dev/null
+		apt-get -y install $base0 $base1 
+		#1> /dev/null
 	fi
 }
 
@@ -115,7 +116,8 @@ function MENU {
 	              "S" "Enable/Renew SSL for VHost"
 	              "W" "Enable/Disable WebAuth"
 	              "A" "Add User to WebAuth"
-	              "U" "Remove User from WebAuth")
+	              "U" "Remove User from WebAuth"
+				  "H" "Add/Remove Softlink to the rtorrent users homedir")
 	
 	if [ -f $logfile ]
 	then
@@ -191,6 +193,7 @@ function MENU_OPTIONS () {
 	W)	WEBAUTH_TOGGLE;;
 	A)	ADD_USER_TO_WEBAUTH;;
 	U)	REMOVE_WEBAUTH_USER;;
+	H)	SOFTLINK_TO_HOMEDIR;;
 	L)	INSTALLLOG;;
 	9)	ADD_USER;;
 	6)	REMOVE_USER;;
@@ -278,7 +281,11 @@ function LICENSE {
 
 function CHANGELOG {
 	#https://superuser.com/questions/802650/make-a-web-request-cat-response-to-stdout
-	link=$(wget -q -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/changelog)
+	# local homedir
+	link=$(cat $(getent passwd "$(who am i | cut -d" " -f1)" | cut -d: -f6)/changelog)
+	#link=$(cat /home/$(who am i | cut -d" " -f1)/changelog)
+	# github
+	#link=$(wget -q -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/changelog)
 	dialog --title "Changelog" --stdout --begin $x $y --no-collapse --msgbox "$link" $height $width
 	EXITCODE=$?
 	# Get exit status
@@ -628,11 +635,22 @@ function SYSTEM_UPDATE {
 }
 
 function APACHE2 {
-	apt-get -y install openssl git apache2 apache2-utils build-essential libsigc++-2.0-dev libcurl4-openssl-dev automake libtool libcppunit-dev libncurses5-dev php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION unzip libssl-dev curl 2>/dev/null 1>> $LOG_REDIRECTION
+	apt-get -y install openssl git apache2 apache2-utils php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION unzip curl 2>/dev/null 1>> $LOG_REDIRECTION
+	#build-essential libsigc++-2.0-dev libcurl4-openssl-dev automake libtool libncurses5-dev libcppunit-dev libssl-dev
 	
 	#https://www.digitalocean.com/community/tutorials/apache-configuration-error-ah00558-could-not-reliably-determine-the-server-s-fully-qualified-domain-name
 	echo "ServerName 127.0.0.1" >> /etc/apache2/apache2.conf
+	
+	#https://www.inmotionhosting.com/support/server/apache/hide-apache-version-and-linux-os/
+	#https://stackoverflow.com/questions/24889346/how-to-uncomment-a-line-that-contains-a-specific-string-using-sed
+	sed -i '/ServerTokens OS/  s/^/#/' /etc/apache2/conf-enabled/security.conf
+	sed -i '/#ServerTokens Full/a ServerTokens Prod' /etc/apache2/conf-enabled/security.conf
+	
+	sed -i '/ServerSignature On/  s/^/#/' /etc/apache2/conf-enabled/security.conf
+	sed -i '/ServerSignature Off/  s/^#//' /etc/apache2/conf-enabled/security.conf
+	
 	systemctl reload apache2.service 1>> $LOG_REDIRECTION
+	systemctl restart apache2.service 1>> $LOG_REDIRECTION
 }
 
 function RTORRENT_LOCAL () {
@@ -661,10 +679,14 @@ function RTORRENT () {
 	apt-get -y install rtorrent 1>> $LOG_REDIRECTION
 	
 	#https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template
-	wget -q -O - "https://raw.githubusercontent.com/wiki/rakshasa/rtorrent/CONFIG-Template.md" | sed -ne "/^######/,/^### END/p" | sed -re "s:/home/USERNAME:${USER[4]}:" >${USER[4]}/.rtorrent.rc
+	wget -q -O - "https://raw.githubusercontent.com/wiki/rakshasa/rtorrent/CONFIG-Template.md" | sed -ne "/^######/,/^### END/p" | sed -re "s:/home/USERNAME:/srv:" >${USER[4]}/.rtorrent.rc
 	
 	chown -R ${USER[1]}:${USER[3]} ${USER[4]}/.rtorrent.rc
 	chmod -R 775 ${USER[4]}/.rtorrent.rc
+	
+	# granted rtorrent user to run folder with group rights
+	sudo usermod -a -G www-data ${USER[1]}
+	CREATE_TMPFILES ${USER[1]}
 	
 	#https://github.com/rakshasa/rtorrent/issues/949#issuecomment-572528586
 	sed -i '/^system.umask.*/a session.use_lock.set = no' ${USER[4]}/.rtorrent.rc
@@ -672,7 +694,14 @@ function RTORRENT () {
 	#https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC
 	#https://www.cyberciti.biz/faq/how-to-use-sed-to-find-and-replace-text-in-files-in-linux-unix-shell/
 	sed -i '/(session.path),rpc.socket)/ s/^#//' ${USER[4]}/.rtorrent.rc
-	sed -i '/(session.path),rpc.socket)/ s/770/777/' ${USER[4]}/.rtorrent.rc
+	sed -i '/(session.path),rpc.socket)/ s/770/776/' ${USER[4]}/.rtorrent.rc
+	
+	#sed -i 's:(cfg.basedir),".session/":"/run/rtorrent/":' ${USER[4]}/.rtorrent.rc
+	sed -i 's:(cat,(session.path),rpc.socket):/run/rtorrent/rpc.socket:' ${USER[4]}/.rtorrent.rc
+	sed -i ':rtorrent.pid: s:(session.path):/run/rtorrent/:' ${USER[4]}/.rtorrent.rc
+	
+	#set folder group to www-data
+	sed -i '27iexecute.throw = chown, -R, :www-data, (cat, (cfg.basedir))' ${USER[4]}/.rtorrent.rc
 	
 	if (( $rtorrent_version_micro <= 6 ))
 	then
@@ -687,6 +716,19 @@ function RTORRENT () {
 	
 	echo "rtorrent rtorrent.service" 1>> $LOG_REDIRECTION 
 	cat /etc/systemd/system/rtorrent.service 1>> $LOG_REDIRECTION
+}
+
+function CREATE_TMPFILES () {
+	#https://serverfault.com/questions/779634/create-a-directory-under-var-run-at-boot
+	cat > "/usr/lib/tmpfiles.d/rtorrent.conf" <<-EOF
+#Type Path            Mode UID      GID        Age Argument
+d     /run/rtorrent   0775 $1 www-data   -   -
+EOF
+	
+	# inital placement for the direct run
+	mkdir -p /run/rtorrent
+	chown -R $1:www-data /run/rtorrent
+	chmod -R 775 /run/rtorrent
 }
 
 function RTORRENT_TMUX_SERVICE () {
@@ -827,7 +869,7 @@ function CHANGE_RTORRENTRC () {
 function CHANGE_DLFOLDER () {
 	arr=("$@")
 	
-	RETURN=$(dialog --stdout --begin $x $y --dselect "${arr[15]}" $height $width)
+	RETURN=$(dialog --stdout --begin $x $y --dselect "${arr[15]}" 10 $width)
 	EXITCODE=$?
 	RETURN=$(echo "$RETURN" | sed 's:/*$::')
 	
@@ -983,8 +1025,8 @@ function HTTPS_CONF () {
 	# modules, e.g.
 	#LogLevel info ssl:warn
 
-	ErrorLog ${APACHE_LOG_DIR}/rutorrent_error.log
-	CustomLog ${APACHE_LOG_DIR}/rutorrent.log vhost_combined
+	ErrorLog \${APACHE_LOG_DIR}/rutorrent_error.log
+	CustomLog \${APACHE_LOG_DIR}/rutorrent.log vhost_combined
 
 	Include /etc/apache2/conf-available/options-ssl-apache.conf
 	SSLEngine on
@@ -1136,7 +1178,6 @@ function INSTALL_RUTORRENT () {
 		dialog --title "Error" --stdout --begin $small_x $y --msgbox "No ruTorrent Version was choosen" $small_height $width
 	else
 		SELECTED=$1
-		#SELECTED_CUT=
 		SELECTED_CUT="ruTorrent-${SELECTED:1}"
 		
 		cd /var/www
@@ -1146,7 +1187,10 @@ function INSTALL_RUTORRENT () {
 		
 		#https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC
 		sed -i 's|scgi_port = 5000|scgi_port = 0|' /var/www/$SELECTED_CUT/conf/config.php
-		sed -i 's|scgi_host = "127.0.0.1"|scgi_host = "unix://'"$HOMEDIR"'/rtorrent/.session/rpc.socket"|' /var/www/$SELECTED_CUT/conf/config.php
+		sed -i 's|scgi_host = "127.0.0.1"|scgi_host = "unix:///run/rtorrent/rpc.socket"|' /var/www/$SELECTED_CUT/conf/config.php
+		
+		#move ruTorrent errorlog to a folder writeable by www-data
+		sed -i 's#/tmp/errors.log#/var/log/apache2/rutorrent-errors.log#' /var/www/$SELECTED_CUT/conf/config.php
 		
 		chown -R www-data:www-data /var/www/$SELECTED_CUT
 		chmod -R 775 /var/www/$SELECTED_CUT
@@ -1205,8 +1249,8 @@ function CREATE_AND_ACTIVATE_CONF () {
 	# modules, e.g.
 	#LogLevel info ssl:warn
 
-	ErrorLog ${APACHE_LOG_DIR}/rutorrent_error.log
-	CustomLog ${APACHE_LOG_DIR}/rutorrent.log vhost_combined
+	ErrorLog \${APACHE_LOG_DIR}/rutorrent_error.log
+	CustomLog \${APACHE_LOG_DIR}/rutorrent.log vhost_combined
 </VirtualHost>
 EOF
 	
@@ -1483,6 +1527,66 @@ function REMOVE_USER_FROM_WEBAUTH_AUTH () {
 	fi
 }
 
+function SOFTLINK_TO_HOMEDIR {
+	rtorrentuser=$(find /home -name .rtorrent.rc | rev | cut -d"/" -f2 | rev)
+	status=$(ls -lrt /home/$rtorrentuser | grep "rtorrent" | grep -c "^l")
+	
+	#        <tag1><item1>                <status1><tag2><item2>                <status2>
+	SOFTLINK=("on" "add softlink to homedir" "OFF" "off" "no softlink to homedir" "OFF")
+	
+	if [ $status == "0" ]
+	then
+		SOFTLINK[5]="ON"
+		preselect="on"
+	else
+		SOFTLINK[2]="ON"
+		preselect="off"
+	fi
+	
+	SELECTED=$(dialog \
+	--title "Add/Remove softlink to rtorrent user home" \
+	--stdout \
+	--begin $x $y \
+	--no-tags \
+	--default-item "$preselect" \
+	--radiolist "Softlink to home of rtorrent user $rtorrentuser status (*)" $height $width 2 "${SOFTLINK[@]}")
+	EXITCODE=$?
+	#echo "$SELECTED"
+	# Get exit status
+	# 0 means user hit OK button.
+	# 1 means user hit CANCEL button.
+	# 2 means user hit HELP button.
+	# 3 means user hit EXTRA button.
+	# 255 means user hit [Esc] key.
+	case $EXITCODE in
+	0)		TOGGLE_SOFTLINK "$SELECTED";;
+	1|255)	;;
+	esac
+	MENU
+}
+
+function TOGGLE_SOFTLINK () {
+	HOMEDIR=$(find /home -name .rtorrent.rc | rev | cut -d"/" -f2- | rev)
+	status=$(ls -lrt /$HOMEDIR | grep "rtorrent" | grep -c "^l")
+	location=$(grep "method.insert = cfg.basedir" $HOMEDIR/.rtorrent.rc | cut -d'"' -f2)
+	#echo "$location"
+	
+	if [ -d $location ]
+	then
+		if [ $1 == "on" ]
+		then
+			if [ $status == "0" ]
+			then
+				ln -s $location $HOMEDIR/rtorrent
+			fi
+		else
+			unlink $HOMEDIR/rtorrent 2>> /dev/null
+		fi
+	else
+		dialog --title "Error" --stdout --begin $small_x $y --msgbox "rtorrent directory to link from not exist" $small_height $width
+	fi
+}
+
 function SCRIPTED_INSTALL () {
 	dialog --title "Scripted Installation" --stdout --begin $x $y --colors --yesno "\
 The scripted installation ask you some questions about the\n\
@@ -1491,7 +1595,7 @@ after that you will see a list with all you have selected.\n\
 \n\
 You can shortcut everything with hitting \Zu\"enter\"\ZU to get a\n\
 standard installation with the most common result, newest\n\
-versions, and all under the users home folder\n\
+versions, and add all under the users home folder via softlink\n\
 \n\
 Until you choose install, nothing will happen to your system.\n\
 To this point this installation only looks after \Z4dialog\Zn\n\
@@ -1650,7 +1754,7 @@ $answer2
 	PORT_RANGE_MIN="50000"
 	PORT_RANGE_MAX="50000"
 	PORT_SET="no"
-	DLFOLDER=${USER[4]}
+	DLFOLDER="/srv"
 	
 	OUTPUT=$(dialog \
 	--title "Edit rtorrent.rc" \
@@ -1697,7 +1801,7 @@ $answer2
 		;;
 	1|255)	MENU;;
 	3)
-		RETURN=$(dialog --stdout --dselect "$DLFOLDER" $height $width)
+		RETURN=$(dialog --stdout --begin $x $y --dselect "$DLFOLDER" 10 $width)
 		EXITCODE=$?
 		#https://stackoverflow.com/questions/9018723/what-is-the-simplest-way-to-remove-a-trailing-slash-from-each-parameter
 		RETURN=$(echo "$RETURN" | sed 's:/*$::')
@@ -1829,11 +1933,17 @@ function INSTALLATION () {
 	sed -i '/port_random.set/ s/'"$PORT_SET"'/'"${RC[1]}"'/' ${USER[4]}/.rtorrent.rc
 	sed -i 's#'"$DLFOLDER"'#'"${RC[2]}"'#' ${USER[4]}/.rtorrent.rc
 	chown -R ${USER[1]}:${USER[3]} ${RC[2]}
-	
+		
 	echo "Enable rtorrent" 1>> $LOG_REDIRECTION
 	systemctl enable rtorrent.service 2>> $LOG_REDIRECTION
 	systemctl start rtorrent.service 1>> $LOG_REDIRECTION
 	systemctl status rtorrent.service --no-pager 1>> $LOG_REDIRECTION
+	
+	#softlink to rtorrent user homedir if different
+	if [ "${RC[2]}" != "${USER[4]}" ]
+	then
+		ln -s ${RC[2]}/rtorrent/ ${USER[4]}/rtorrent
+	fi
 	
 	echo "Install rutorrent" 1>> $LOG_REDIRECTION
 	echo -e "XXX\n70\nInstall and configure rutorrent\nXXX"
@@ -1852,25 +1962,25 @@ function INSTALL_COMPLETE {
 	BASEDIR=${RC[2]}
 	
 	dialog --title "Installation Completed" --stdout --begin $x $y --colors --msgbox "\
- \Z2Installation is completed.\Z0\n\
+ \Z2Installation is completed.\Zn\n\
 \n\
  The actual Apache2 vhost file has been disabled and replaced\n\
- with a new one. If you were using it, combine the default and\n\
- the ruTorrent vhost file and enable it again.\n\
+ with a new one. If you were using it, enable the default again\n\
+ beside the ruTorrent vhost file.\n\
 \n\
  Your downloads folder is in \Z2$BASEDIR/rtorrent/download\Z0\n\
- Sessions data is in \Z2$BASEDIR/rtorrent/.session\Z0\n\
- rtorrent's configuration file is in \Z2$HOMEDIR/.rtorrent.rc\Z0\n\
+ Sessions data is in \Z2$BASEDIR/rtorrent/.session\Zn\n\
+ rtorrent's configuration file is in \Z2$HOMEDIR/.rtorrent.rc\Zn\n\
 \n\
  If you want to change settings for rtorrent, such as download\n\
- folder, etc., you need to edit the '.rtorrent.rc' file. E.g.\n\
- 'nano \Z2$HOMEDIR/.rtorrent.rc\Z0'\n\
+ folder, etc., you need to edit the '.rtorrent.rc' file.\n\
+ E.g. 'nano \Z2$HOMEDIR/.rtorrent.rc\Zn'\n\
 \n\
  rtorrent can be started|stopped|restarted without rebooting\n\
- with '\Z5sudo systemctl start|stop|restart rtorrent.service\Z0'.\n\
+ with '\Z5sudo systemctl start|stop|restart rtorrent.service\Zn'.\n\
 \n\
- \Z2LOCAL IP:\Z0    http://$internal_ip/\n\
- \Z2EXTERNAL IP:\Z0 http://$external_ip/\n\
+ \Z2LOCAL IP:\Z0    http://$internal_ip/\Zn\n\
+ \Z2EXTERNAL IP:\Z0 http://$external_ip/\Zn\n\
 "\
 	$height $width
 	EXITCODE=$?

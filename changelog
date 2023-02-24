@@ -1,3 +1,16 @@
+Version 1.3
+* Remove Serversignature from Unauthorized HTML redirect
+  from Apache2
+* Fix logdir path in configfile for HTTP and HTTPS
+* Change socket (to /run) and rtorrent homedir (to /srv),
+  because homedir gets private in Ubuntu and Ubuntu based Linux
+  after 20.04 home directory permission now 750 debian used
+  to be 755 as Ubuntu was.
+  https://ubuntu.com/blog/private-home-directories-for-ubuntu-21-04
+* Add option to add/remove softlink to rtorrent user homedir
+* Fix window height from "Change Basedir"
+-----------------------------------------------------------------
+
 Version 1.2
 * Add to Script Version on menu page
 * Cleaning the code, made dialog windows more equally
@@ -7,7 +20,7 @@ Version 1.2
 
 Version 1.1
 * Bugfix "Change VHost" Apache2 needs a restart if certificats
-  are changed or activated, Renew cert too
+  are changed or activated, Renew cert also
 -----------------------------------------------------------------
 
 Version 1.0
