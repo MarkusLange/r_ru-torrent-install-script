@@ -1,0 +1,6 @@
+*
+!*.png
+!.gitignore
+!changelog
+!README.md
+!rrutorrent-install-script.bash

@@ -8,7 +8,7 @@ logfile=install.log
 LOG_REDIRECTION="/dev/null"
 #LOG_REDIRECTION=$logfile
 # Script versionnumber
-script_versionumber=1.3
+script_versionumber=1.4
 # Window dimensions
 height=20
 small_height=6
@@ -117,7 +117,8 @@ function MENU {
 	              "W" "Enable/Disable WebAuth"
 	              "A" "Add User to WebAuth"
 	              "U" "Remove User from WebAuth"
-				  "H" "Add/Remove Softlink to the rtorrent users homedir")
+				  "H" "Add/Remove Softlink to the rtorrent users homedir"
+				  "X" "Remove complete rtorrent & rutorrent installation")
 	
 	if [ -f $logfile ]
 	then
@@ -194,6 +195,7 @@ function MENU_OPTIONS () {
 	A)	ADD_USER_TO_WEBAUTH;;
 	U)	REMOVE_WEBAUTH_USER;;
 	H)	SOFTLINK_TO_HOMEDIR;;
+	X)	REMOVE_EVERYTHING;;
 	L)	INSTALLLOG;;
 	9)	ADD_USER;;
 	6)	REMOVE_USER;;
@@ -635,8 +637,8 @@ function SYSTEM_UPDATE {
 }
 
 function APACHE2 {
-	apt-get -y install openssl git apache2 apache2-utils php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION unzip curl 2>/dev/null 1>> $LOG_REDIRECTION
-	#build-essential libsigc++-2.0-dev libcurl4-openssl-dev automake libtool libncurses5-dev libcppunit-dev libssl-dev
+	apt-get -y install openssl apache2 apache2-utils php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION unzip curl 2>/dev/null 1>> $LOG_REDIRECTION
+	#git build-essential libsigc++-2.0-dev libcurl4-openssl-dev automake libtool libncurses5-dev libcppunit-dev libssl-dev
 	
 	#https://www.digitalocean.com/community/tutorials/apache-configuration-error-ah00558-could-not-reliably-determine-the-server-s-fully-qualified-domain-name
 	echo "ServerName 127.0.0.1" >> /etc/apache2/apache2.conf
@@ -821,13 +823,13 @@ function CHANGE_RTORRENTRC () {
 	--output-separator $separator \
 	--mixedform " Port Range defines the usable Ports for rtorrent\n
 	Random Listening Port let rtorrent set the Port randomly\n
-	rtorrent basedir (needs to be writeable by rtorrent user): \n
+	rtorrent basedir: \n
 	 └── rtorrent \n
 	     ├── .session \n
-	     │   └── rpc.socket \n
 	     ├── download \n
 	     ├── log \n
 	     └── watch \n
+	\n
 	"\
 	$height $width 0 \
 	"Port Range                    :" 1 1  " $NEW_PORT_RANGE_MIN" 1 33  6 0 0 \
@@ -860,7 +862,11 @@ function CHANGE_RTORRENTRC () {
 	0)		sed -i '/port_range.set/ s/'"$PORT_RANGE"'/'"$NEW_PORT_RANGE"'/' $HOMEDIR/.rtorrent.rc
 			sed -i '/port_random.set/ s/'"$PORT_SET"'/'"$SELECTED"'/' $HOMEDIR/.rtorrent.rc
 			sed -i 's#'"$DLFOLDER"'#'"$NEW_DLFOLDER"'#' $HOMEDIR/.rtorrent.rc
-			chown -R ${arr[1]}:${arr[3]} $NEW_DLFOLDER;;
+			#chown -R ${arr[1]}:${arr[3]} $NEW_DLFOLDER
+			cd $NEW_DLFOLDER
+			mkdir rtorrent
+			chown -R ${arr[1]}:www-data rtorrent
+			cd ~;;
 	1|255)	;;
 	3)		CHANGE_DLFOLDER "${arr[@]}";;
 	esac
@@ -1600,13 +1606,13 @@ versions, and add all under the users home folder via softlink\n\
 Until you choose install, nothing will happen to your system.\n\
 To this point this installation only looks after \Z4dialog\Zn\n\
 what makes this fancy menu and for \Z4wget\Zn for the downloads\n\
-both should allready part of an debian based linux system.\n\
+both should already part of an debian based linux system.\n\
 \n\
 So only these two are installed until now, the installation\n\
 started with an update e.g. (apt update; apt dist-upgrade) to\n\
 get this linux up-to-date before the installations starts.\n\
 \n\
-You can allways update your ruTorrent to the next version and\n\
+You can always update your ruTorrent to the next version and\n\
 add SSL-Protocol or WebAuth to your ruTorrent Webpage\n\
 \n\
 There would a logfile created to show what happend\n\
@@ -1738,7 +1744,7 @@ $answer2
 				0|1|255)   SCRIPT;;
 				esac
 			else
-				# 0 User attribute, 1 Username, 2 User password, 3 Usergroup=Username, 4 User homedir, 5 User SSH status
+				# USER[_] 0 User attribute, 1 Username, 2 User password, 3 Usergroup = Username, 4 User homedir, 5 User SSH status
 				USER[0]="to_create"
 				USER[1]=${arr[0]}
 				USER[2]=${arr[1]}
@@ -1767,13 +1773,13 @@ $answer2
 	--default-button "ok" \
 	--mixedform " Port Range defines the usable Ports for rtorrent\n
 	Random Listening Port let rtorrent set the Port randomly\n
-	rtorrent basedir (script will grep permissions):\n
+	rtorrent basedir:\n
 	 └── rtorrent \n
 	     ├── .session \n
-	     │   └── rpc.socket \n
 	     ├── download \n
 	     ├── log \n
 	     └── watch \n
+	\n
 	"\
 	$height $width 0 \
 	"Port Range                    :" 1 1  " $PORT_RANGE_MIN" 1 33  6 0 0 \
@@ -1932,7 +1938,11 @@ function INSTALLATION () {
 	sed -i '/port_range.set/ s/'"$PORT_RANGE"'/'"${RC[0]}"'/' ${USER[4]}/.rtorrent.rc
 	sed -i '/port_random.set/ s/'"$PORT_SET"'/'"${RC[1]}"'/' ${USER[4]}/.rtorrent.rc
 	sed -i 's#'"$DLFOLDER"'#'"${RC[2]}"'#' ${USER[4]}/.rtorrent.rc
-	chown -R ${USER[1]}:${USER[3]} ${RC[2]}
+	cd ${RC[2]}
+	mkdir rtorrent
+	#chown -R ${USER[1]}:${USER[3]} ${RC[2]}
+	chown -R ${USER[1]}:www-data rtorrent
+	cd ~
 		
 	echo "Enable rtorrent" 1>> $LOG_REDIRECTION
 	systemctl enable rtorrent.service 2>> $LOG_REDIRECTION
@@ -1951,7 +1961,9 @@ function INSTALLATION () {
 	
 	echo -e "XXX\n100\nInstallation complete\nXXX"
 	} | dialog --begin $small_x $y --gauge "Please wait while installing" $small_height $width 0
+	tput civis
 	sleep 2
+	tput cnorm
 	INSTALL_COMPLETE
 }
 
@@ -1983,6 +1995,87 @@ function INSTALL_COMPLETE {
  \Z2EXTERNAL IP:\Z0 http://$external_ip/\Zn\n\
 "\
 	$height $width
+	EXITCODE=$?
+	# Get exit status
+	# 0 means user hit OK button.
+	# 1 means user hit CANCEL button.
+	# 2 means user hit HELP button.
+	# 3 means user hit EXTRA button.
+	# 255 means user hit [Esc] key.
+	case $EXITCODE in
+	0|1|255)	;;
+	esac
+}
+
+function REMOVE_EVERYTHING () {
+	dialog --title "Remove Everything" --stdout --begin $x $y --colors --yesno "\
+\n\
+ Remove everything that is installed with this script\n\
+\n\
+ If you start this all from the script installed packages will\n\
+ be removed, all packages from apache2, php and rtorrent.\n\
+\n\
+ All downloaded files will be deleted too, also all\n\
+ config files and everything under /var/www\n\
+ be carefull with this.\n\
+\n\
+ A system cleanup with apt autoremove will finalize this.\n\
+"\
+	$height $width
+	EXITCODE=$?
+	# Get exit status
+	# 0 means user hit OK button.
+	# 1 means user hit CANCEL button.
+	# 2 means user hit HELP button.
+	# 3 means user hit EXTRA button.
+	# 255 means user hit [Esc] key.
+	case $EXITCODE in
+	0)		REMOVE_ALL;;
+	1|255)	;;
+	esac
+	MENU
+}
+
+function REMOVE_ALL () {
+	{
+	if [ -f removelog ]
+	then
+		rm -f removelog
+	fi
+	echo -e "XXX\n0\nRemove installation of rtorrent & rutorrent\nXXX"
+	
+	systemctl stop rtorrent.service
+	systemctl stop apache2.service
+	echo -e "XXX\n5\nStop systemctl services\nXXX"
+	
+	if ( find /home -type l | grep -cq rtorrent )
+	then
+		unlink $(find /home -type l | grep rtorrent)
+	fi
+	echo -e "XXX\n10\nRemove softlink\nXXX"
+	
+	(time apt-get purge -y apache2 apache2-utils apache2-bin php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION) >> removelog 2>&1
+	rm -R /var/www $(whereis apache2 | cut -d: -f2)
+	echo -e "XXX\n30\nRemove Apache and PHP\nXXX"
+	
+	(time apt-get purge -y rtorrent) >> removelog 2>&1
+	echo -e "XXX\n50\nRemove Rtorrent\nXXX"
+	
+	echo -e "XXX\n70\nClean system (apt autoremove)\nXXX"
+	(time apt-get autoremove -y) >> removelog 2>&1
+	
+	echo -e "XXX\n90\nRemove config files\nXXX"
+	(time rm $(find / -name .rtorrent.rc)) >> removelog 2>&1
+	(time rm -R $(sudo find / -name rpc.socket | rev | cut -d/ -f2- | rev)) >> removelog 2>&1
+	(time rm -R $(sudo find / -name rtorrent-*.log | rev | cut -d/ -f3- | rev)) >> removelog 2>&1
+	echo -e "XXX\n100\nRemoving complete\nXXX"
+	} | dialog --begin $small_x $y --gauge "Please wait while installing" $small_height $width 0
+	
+	tput civis
+	sleep 2
+	tput cnorm
+	
+	dialog --title "Remove Everything" --stdout --begin $small_x $y --colors --msgbox "Uninstall complete." $small_height $width
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.

@@ -51,6 +51,7 @@ Installation Completed
   - script shows actuall changelog from git
   - will ask by itself for sudo if you start it without
   - script fully silent
+  - add option to remove everything installed with this script
 - ruTorrent
   - ruTorrent can easily updated
   - add python path to rutorrent to support cloudflare (3.9+)
