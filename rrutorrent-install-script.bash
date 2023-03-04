@@ -2008,18 +2008,21 @@ function INSTALL_COMPLETE {
 }
 
 function REMOVE_EVERYTHING () {
-	dialog --title "Remove Everything" --stdout --begin $x $y --colors --yesno "\
+	dialog --title "Remove Everything" --stdout --begin $x $y --yes-label "Remove" --no-label "Keep" --colors --yesno "\
 \n\
- Remove everything that is installed with this script\n\
+ \ZuBe carefull with this\Zn\n\
+ Everything that was installed with this script will be removed.\n\
 \n\
  If you start this all from the script installed packages will\n\
- be removed, all packages from apache2, php and rtorrent.\n\
+ be removed, all packages from apache2, php, rtorrent and\n\
+ rutorrent.\n\
 \n\
- All downloaded files will be deleted too, also all\n\
- config files and everything under /var/www\n\
- be carefull with this.\n\
+ All downloaded files will be deleted too, also all config files\n\
+ and everything under /var/www.\n\
 \n\
  A system cleanup with apt autoremove will finalize this.\n\
+\n\
+ There will nothing left behind, and nothing ask after this.
 "\
 	$height $width
 	EXITCODE=$?
@@ -2037,46 +2040,56 @@ function REMOVE_EVERYTHING () {
 }
 
 function REMOVE_ALL () {
+	removelogfile=remove.log
+	
+	dialog --begin $small_x $y --infobox "\nPlease wait while fetching data" $small_height $width
+	
+	activ_rutorrent=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect | cut -d'-' -f2)
+	rtorrent_rc_path=$(find / -name .rtorrent.rc)
+	rpc_socket_path=$(find / -name rpc.socket | rev | cut -d/ -f2- | rev)
+	rtorrent_basedir=$(find / -name rtorrent-*.log | rev | cut -d/ -f3- | rev)
+	softlink_link=$(find /home -type l | grep rtorrent)
+	
 	{
-	if [ -f removelog ]
+	if [ -f $removelogfile ]
 	then
-		rm -f removelog
+		rm -f $removelogfile
 	fi
 	echo -e "XXX\n0\nRemove installation of rtorrent & rutorrent\nXXX"
 	
 	echo -e "XXX\n5\nStop systemctl services\nXXX"
-	systemctl stop rtorrent.service 1>> removelog
-	systemctl disable rtorrent.service 2>> removelog
+	systemctl stop rtorrent.service 1>> $removelogfile
+	systemctl disable rtorrent.service 2>> $removelogfile
 	rm /etc/systemd/system/rtorrent.service
 	
-	systemctl stop apache2.service 1>> removelog
-	systemctl disable apache2.service 2>> removelog
-	systemctl daemon-reload 1>> removelog
+	systemctl stop apache2.service 1>> $removelogfile
+	systemctl disable apache2.service 2>> $removelogfile
+	systemctl daemon-reload 1>> $removelogfile
 	
 	echo -e "XXX\n10\nRemove softlink\nXXX"
 	if ( find /home -type l | grep -cq rtorrent )
 	then
-		unlink $(find /home -type l | grep rtorrent) 2>> removelog
+		unlink $(find /home -type l | grep rtorrent) 2>> $removelogfile
 	fi
 	
 	echo -e "XXX\n30\nRemove Apache and PHP\nXXX"
-	(time apt-get purge -y apache2 apache2-utils apache2-bin php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION) >> removelog 2>&1
+	(time apt-get purge -y apache2 apache2-utils apache2-bin php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION) >> $removelogfile 2>&1
 	rm -R /var/www $(whereis apache2 | cut -d: -f2)
 	
 	echo -e "XXX\n50\nRemove rtorrent\nXXX"
-	(time apt-get purge -y rtorrent) >> removelog 2>&1
+	(time apt-get purge -y rtorrent) >> $removelogfile 2>&1
 	
 	echo -e "XXX\n60\nRemove ruTorrent plugins\nXXX"
-	(time apt-get purge -y ffmpeg libzen0v5 libmediainfo0v5 mediainfo unrar-free sox libsox-fmt-mp3) >> removelog 2>&1
-	(time sudo python$python_version_major -m pip uninstall -y cloudscraper --quiet) 1>> removelog 2>&1
-		
+	(time apt-get purge -y ffmpeg libzen0v5 libmediainfo0v5 mediainfo unrar-free sox libsox-fmt-mp3) >> $removelogfile 2>&1
+	(time sudo python$python_version_major -m pip uninstall -y cloudscraper --quiet) 1>> $removelogfile 2>&1
+	
 	echo -e "XXX\n70\nClean system (apt autoremove)\nXXX"
-	(time apt-get autoremove -y) >> removelog 2>&1
+	(time apt-get autoremove -y) >> $removelogfile 2>&1
 	
 	echo -e "XXX\n90\nRemove config files\nXXX"
-	(time rm $(find / -name .rtorrent.rc)) >> removelog 2>&1
-	(time rm -R $(sudo find / -name rpc.socket | rev | cut -d/ -f2- | rev)) >> removelog 2>&1
-	(time rm -R $(sudo find / -name rtorrent-*.log | rev | cut -d/ -f3- | rev)) >> removelog 2>&1
+	(time rm $rtorrent_rc_path) >> $removelogfile 2>&1
+	(time rm -R $rpc_socket_path) >> $removelogfile 2>&1
+	(time rm -R $rtorrent_basedir) >> $removelogfile 2>&1
 	echo -e "XXX\n100\nRemoving complete\nXXX"
 	} | dialog --begin $small_x $y --gauge "Please wait while installing" $small_height $width 0
 	
@@ -2084,7 +2097,24 @@ function REMOVE_ALL () {
 	sleep 2
 	tput cnorm
 	
-	dialog --title "Remove Everything" --stdout --begin $small_x $y --colors --msgbox "Uninstall complete." $small_height $width
+	dialog --title "Removing complete" --stdout --begin $x $y --colors --msgbox "\
+\n\
+ Removed:\n\
+ Apache2 (\Z4$apache2_version\Zn) + dependencies\n\
+ PHP (\Z4$php_version\Zn) + dependencies\n\
+ rtorrent (\Z4$rtorrent_version\Zn) + dependencies\n\
+ ruTorrent (\Z4v$activ_rutorrent\Zn) + dependencies\n\
+\n\
+ Removed files & folders:\n\
+ .rtorrent.rc\n\
+ \Z4$rtorrent_rc_path\Zn\n\
+ rpc.socket\n\
+ \Z4$rpc_socket_path\Zn\n\
+ rtorrent basedir\Zn\n\
+ \Z4$rtorrent_basedir
+ softlink\n\
+ \Z4$softlink_link\Zn"\
+	$height $width
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
