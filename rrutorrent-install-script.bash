@@ -118,7 +118,7 @@ function MENU {
 	              "A" "Add User to WebAuth"
 	              "U" "Remove User from WebAuth"
 				  "H" "Add/Remove Softlink to the rtorrent users homedir"
-				  "X" "Remove complete rtorrent & rutorrent installation")
+				  "X" "Remove rtorrent & rutorrent installation complete")
 	
 	if [ -f $logfile ]
 	then
@@ -284,10 +284,10 @@ function LICENSE {
 function CHANGELOG {
 	#https://superuser.com/questions/802650/make-a-web-request-cat-response-to-stdout
 	# local homedir
-	link=$(cat $(getent passwd "$(who am i | cut -d" " -f1)" | cut -d: -f6)/changelog)
+	#link=$(cat $(getent passwd "$(who am i | cut -d" " -f1)" | cut -d: -f6)/changelog)
 	#link=$(cat /home/$(who am i | cut -d" " -f1)/changelog)
 	# github
-	#link=$(wget -q -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/changelog)
+	link=$(wget -q -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/changelog)
 	dialog --title "Changelog" --stdout --begin $x $y --no-collapse --msgbox "$link" $height $width
 	EXITCODE=$?
 	# Get exit status
@@ -2044,23 +2044,32 @@ function REMOVE_ALL () {
 	fi
 	echo -e "XXX\n0\nRemove installation of rtorrent & rutorrent\nXXX"
 	
-	systemctl stop rtorrent.service
-	systemctl stop apache2.service
 	echo -e "XXX\n5\nStop systemctl services\nXXX"
+	systemctl stop rtorrent.service 1>> removelog
+	systemctl disable rtorrent.service 2>> removelog
+	rm /etc/systemd/system/rtorrent.service
 	
+	systemctl stop apache2.service 1>> removelog
+	systemctl disable apache2.service 2>> removelog
+	systemctl daemon-reload 1>> removelog
+	
+	echo -e "XXX\n10\nRemove softlink\nXXX"
 	if ( find /home -type l | grep -cq rtorrent )
 	then
-		unlink $(find /home -type l | grep rtorrent)
+		unlink $(find /home -type l | grep rtorrent) 2>> removelog
 	fi
-	echo -e "XXX\n10\nRemove softlink\nXXX"
 	
+	echo -e "XXX\n30\nRemove Apache and PHP\nXXX"
 	(time apt-get purge -y apache2 apache2-utils apache2-bin php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION) >> removelog 2>&1
 	rm -R /var/www $(whereis apache2 | cut -d: -f2)
-	echo -e "XXX\n30\nRemove Apache and PHP\nXXX"
 	
+	echo -e "XXX\n50\nRemove rtorrent\nXXX"
 	(time apt-get purge -y rtorrent) >> removelog 2>&1
-	echo -e "XXX\n50\nRemove Rtorrent\nXXX"
 	
+	echo -e "XXX\n60\nRemove ruTorrent plugins\nXXX"
+	(time apt-get purge -y ffmpeg libzen0v5 libmediainfo0v5 mediainfo unrar-free sox libsox-fmt-mp3) >> removelog 2>&1
+	(time sudo python$python_version_major -m pip uninstall -y cloudscraper --quiet) 1>> removelog 2>&1
+		
 	echo -e "XXX\n70\nClean system (apt autoremove)\nXXX"
 	(time apt-get autoremove -y) >> removelog 2>&1
 	
