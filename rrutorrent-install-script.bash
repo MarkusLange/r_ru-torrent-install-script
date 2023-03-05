@@ -119,8 +119,8 @@ function MENU {
 	              "W" "Enable/Disable WebAuth"
 	              "A" "Add User to WebAuth"
 	              "U" "Remove User from WebAuth"
-				  "H" "Add/Remove Softlink to the rtorrent users homedir"
-				  "X" "Remove rtorrent & rutorrent installation complete")
+	              "H" "Add/Remove Softlink to the rtorrent users homedir"
+	              "X" "Remove rtorrent & rutorrent installation complete")
 	
 	if [ -f $logfile ]
 	then
@@ -237,7 +237,7 @@ Software Versions:\n\
    Python:                 \Z4$python_version\Z0\n\
    Apache2:                \Z4$apache2_version\Z0\n\
    PHP                     \Z4$php_version\Z0"\
-    $height $width
+	$height $width
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -912,9 +912,9 @@ function SSL_FOR_WEBSERVER () {
 	# 3 means user hit EXTRA button.
 	# 255 means user hit [Esc] key.
 	case $EXITCODE in
-	0)   	SELF_SIGNED $OUTPUT;;
+	0)  	SELF_SIGNED $OUTPUT;;
 	1|255)	;;
-	3)		LE_SIGNED $OUTPUT;;
+	3)  	LE_SIGNED $OUTPUT;;
 	esac
 	MENU
 }
@@ -2099,20 +2099,16 @@ function REMOVE_ALL () {
 	dialog --title "Removing complete" --stdout --begin $x $y --extra-button --extra-label "Show" --ok-label "Exit" --colors --msgbox "\
 \n\
  Removed:\n\
- Apache2 (\Z4$apache2_version\Zn) + dependencies\n\
- PHP (\Z4$php_version\Zn) + dependencies\n\
- rtorrent (\Z4$rtorrent_version\Zn) + dependencies\n\
- ruTorrent (\Z4v$activ_rutorrent\Zn) + dependencies\n\
+ Apache2    (\Z4$apache2_version\Zn) + dependencies\n\
+ PHP        (\Z4$php_version\Zn) + dependencies\n\
+ rtorrent   (\Z4$rtorrent_version\Zn) + dependencies\n\
+ ruTorrent  (\Z4v$activ_rutorrent\Zn) + dependencies\n\
 \n\
  Removed files & folders:\n\
- .rtorrent.rc\n\
- \Z4$rtorrent_rc_path\Zn\n\
- rpc.socket\n\
- \Z4$rpc_socket_path\Zn\n\
- rtorrent basedir\Zn\n\
- \Z4$rtorrent_basedir\Zn\n\
- softlink\n\
- \Z4$softlink_link\Zn\n\
+ .rtorrent.rc          \Z4$rtorrent_rc_path\Zn\n\
+ rpc.socket            \Z4$rpc_socket_path\Zn\n\
+ rtorrent basedir      \Z4$rtorrent_basedir\Zn\n\
+ softlink              \Z4$softlink_link\Zn\n\
 \n\
  The uninstallation is logged in the remove.log"\
 	$height $width
