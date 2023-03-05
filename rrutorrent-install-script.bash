@@ -7,6 +7,8 @@ fullmenu=false
 logfile=install.log
 LOG_REDIRECTION="/dev/null"
 #LOG_REDIRECTION=$logfile
+#Remove Logfile
+removelogfile=remove.log
 # Script versionnumber
 script_versionumber=1.4
 # Window dimensions
@@ -177,7 +179,7 @@ function INSTALLLOG {
 	# 255 means user hit [Esc] key.
 	case $EXITCODE in
 	0|1|255)	;;
-	3)			rm -f install.log;;
+	3)			rm -f $logfile;;
 	esac
 	MENU
 }
@@ -638,7 +640,6 @@ function SYSTEM_UPDATE {
 
 function APACHE2 {
 	apt-get -y install openssl apache2 apache2-utils php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION unzip curl 2>/dev/null 1>> $LOG_REDIRECTION
-	#git build-essential libsigc++-2.0-dev libcurl4-openssl-dev automake libtool libncurses5-dev libcppunit-dev libssl-dev
 	
 	#https://www.digitalocean.com/community/tutorials/apache-configuration-error-ah00558-could-not-reliably-determine-the-server-s-fully-qualified-domain-name
 	echo "ServerName 127.0.0.1" >> /etc/apache2/apache2.conf
@@ -2040,8 +2041,6 @@ function REMOVE_EVERYTHING () {
 }
 
 function REMOVE_ALL () {
-	removelogfile=remove.log
-	
 	dialog --begin $small_x $y --infobox "\nPlease wait while fetching data" $small_height $width
 	
 	activ_rutorrent=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect | cut -d'-' -f2)
@@ -2097,7 +2096,7 @@ function REMOVE_ALL () {
 	sleep 2
 	tput cnorm
 	
-	dialog --title "Removing complete" --stdout --begin $x $y --colors --msgbox "\
+	dialog --title "Removing complete" --stdout --begin $x $y --extra-button --extra-label "Show" --ok-label "Exit" --colors --msgbox "\
 \n\
  Removed:\n\
  Apache2 (\Z4$apache2_version\Zn) + dependencies\n\
@@ -2111,9 +2110,11 @@ function REMOVE_ALL () {
  rpc.socket\n\
  \Z4$rpc_socket_path\Zn\n\
  rtorrent basedir\Zn\n\
- \Z4$rtorrent_basedir
+ \Z4$rtorrent_basedir\Zn\n\
  softlink\n\
- \Z4$softlink_link\Zn"\
+ \Z4$softlink_link\Zn\n\
+\n\
+ The uninstallation is logged in the remove.log"\
 	$height $width
 	EXITCODE=$?
 	# Get exit status
@@ -2124,6 +2125,22 @@ function REMOVE_ALL () {
 	# 255 means user hit [Esc] key.
 	case $EXITCODE in
 	0|1|255)	;;
+	3)			SHOW_REMOVELOG;;
+	esac
+}
+
+function SHOW_REMOVELOG {
+	dialog --title "Uninstallation log" --stdout --begin $x $y --ok-label "Exit" --extra-button --extra-label "Remove Log" --no-collapse --textbox $removelogfile $height $width
+	EXITCODE=$?
+	# Get exit status
+	# 0 means user hit OK button.
+	# 1 means user hit CANCEL button.
+	# 2 means user hit HELP button.
+	# 3 means user hit EXTRA button.
+	# 255 means user hit [Esc] key.
+	case $EXITCODE in
+	0|1|255)	;;
+	3)			rm -f $removelogfile;;
 	esac
 }
 
