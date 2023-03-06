@@ -120,7 +120,7 @@ function MENU {
 	              "A" "Add User to WebAuth"
 	              "U" "Remove User from WebAuth"
 	              "H" "Add/Remove Softlink to the rtorrent users homedir"
-	              "X" "Remove rtorrent & rutorrent installation complete")
+	              "X" "Remove complete rtorrent & rutorrent installation")
 	
 	if [ -f $logfile ]
 	then
@@ -2019,7 +2019,7 @@ function REMOVE_EVERYTHING () {
  rutorrent.\n\
 \n\
  All downloaded files will be deleted too, also all config files\n\
- and everything under /var/www.\n\
+ and everything under the apache2 document root /var/www.\n\
 \n\
  A system cleanup with apt autoremove will finalize this.\n\
 \n\
