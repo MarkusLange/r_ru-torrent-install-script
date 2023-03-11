@@ -1,3 +1,9 @@
+Version 1.5
+* Expand Remove with an option to keep the downloads and torrent
+  data
+* minor fixes for better reinstallation
+-----------------------------------------------------------------
+
 Version 1.4
 * Fixing some folders about the ownership
 * Correct texts inside the dialog windows

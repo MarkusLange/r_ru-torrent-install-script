@@ -35,7 +35,7 @@ Installation Completed
 - GUI
   - full GUI based configuration and installation
   - grep system information by itself
-  - works on all Debian based Linux systems (apt and systemd are needed)
+  - works on all Debian based Linux systems (sudo, apt and systemd are needed)
     - Debian (tested 9+)
     - Ubuntu
     - Mint
@@ -51,7 +51,7 @@ Installation Completed
   - script shows actuall changelog from git
   - will ask by itself for sudo if you start it without
   - script fully silent
-  - add option to remove everything installed with this script
+  - add option to remove everything installed with this script with the option to keep the downloads
 - ruTorrent
   - ruTorrent can easily updated
   - add python path to rutorrent to support cloudflare (3.9+)

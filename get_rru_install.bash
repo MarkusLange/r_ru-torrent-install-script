@@ -11,7 +11,7 @@ then
 		echo "-----------------------------------------------------------"
 		echo "new script version $actuall_v is available, current version is $current_v"
 		echo "-----------------------------------------------------------"
-		echo 
+		echo
 		echo "[c] show changelog between"
 		echo "[d] download and use new script version"
 		echo "[n] use current script"
@@ -53,7 +53,6 @@ then
 				echo "starting current script..."
 				./rrutorrent-install-script.bash;;
 			q|Q|e|E|*)
-				clear
 				exit 0;;
 			esac;;
 			

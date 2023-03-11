@@ -10,7 +10,7 @@ LOG_REDIRECTION="/dev/null"
 #Remove Logfile
 removelogfile=remove.log
 # Script versionnumber
-script_versionumber=1.4
+script_versionumber=1.5
 # Window dimensions
 height=20
 small_height=6
@@ -163,6 +163,8 @@ function MENU {
 }
 
 function EXIT {
+	#https://stackoverflow.com/questions/49733211/bash-jump-to-bottom-of-terminal
+	tput cup $(tput lines) 0
 	echo ""
 	echo "goodbye!"
 	exit 0
@@ -290,7 +292,18 @@ function CHANGELOG {
 	#link=$(cat /home/$(who am i | cut -d" " -f1)/changelog)
 	# github
 	link=$(wget -q -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/changelog)
-	dialog --title "Changelog" --stdout --begin $x $y --no-collapse --msgbox "$link" $height $width
+	actuall_v=$(wget -qq -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-script.bash | grep -m1 script_versionumber | cut -d= -f2)
+	
+	if [[ "$script_versionumber" < "$actuall_v" ]]
+	then
+		backgroundtext="(actual version is V$actuall_v)"		
+	else
+		backgroundtext=""
+	fi
+	
+	dialog --title "Changelog" --stdout --begin $x $y --no-collapse \
+	--backtitle "rtorrent & ruTorrent Installation Script V$script_versionumber $backgroundtext" \
+	--msgbox "$link" $height $width
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -865,7 +878,7 @@ function CHANGE_RTORRENTRC () {
 			sed -i 's#'"$DLFOLDER"'#'"$NEW_DLFOLDER"'#' $HOMEDIR/.rtorrent.rc
 			#chown -R ${arr[1]}:${arr[3]} $NEW_DLFOLDER
 			cd $NEW_DLFOLDER
-			mkdir rtorrent
+			mkdir -p rtorrent
 			chown -R ${arr[1]}:www-data rtorrent
 			cd ~;;
 	1|255)	;;
@@ -1940,7 +1953,7 @@ function INSTALLATION () {
 	sed -i '/port_random.set/ s/'"$PORT_SET"'/'"${RC[1]}"'/' ${USER[4]}/.rtorrent.rc
 	sed -i 's#'"$DLFOLDER"'#'"${RC[2]}"'#' ${USER[4]}/.rtorrent.rc
 	cd ${RC[2]}
-	mkdir rtorrent
+	mkdir -p rtorrent
 	#chown -R ${USER[1]}:${USER[3]} ${RC[2]}
 	chown -R ${USER[1]}:www-data rtorrent
 	cd ~
@@ -1951,9 +1964,13 @@ function INSTALLATION () {
 	systemctl status rtorrent.service --no-pager 1>> $LOG_REDIRECTION
 	
 	#softlink to rtorrent user homedir if different
+	status=$(ls -lrt ${USER[4]} | grep "rtorrent" | grep -c "^l")
 	if [ "${RC[2]}" != "${USER[4]}" ]
 	then
-		ln -s ${RC[2]}/rtorrent/ ${USER[4]}/rtorrent
+		if [ $status == "0" ]
+		then
+			ln -s ${RC[2]}/rtorrent/ ${USER[4]}/rtorrent
+		fi
 	fi
 	
 	echo "Install rutorrent" 1>> $LOG_REDIRECTION
@@ -2009,21 +2026,25 @@ function INSTALL_COMPLETE {
 }
 
 function REMOVE_EVERYTHING () {
-	dialog --title "Remove Everything" --stdout --begin $x $y --yes-label "Remove" --no-label "Keep" --colors --yesno "\
+	dialog --title "Remove Everything" --stdout --begin $x $y --yes-label "Clean up" --extra-button --extra-label "Keep" --no-label "Exit" --colors --yesno "\
+\ZuClean up:\Zn\n\
+Be carefull with this\n\
+Everything that was installed with this script will be removed.\n\
 \n\
- \ZuBe carefull with this\Zn\n\
- Everything that was installed with this script will be removed.\n\
+If you start this all from the script installed packages will\n\
+be removed, all packages from apache2, php, rtorrent and\n\
+rutorrent.\n\
 \n\
- If you start this all from the script installed packages will\n\
- be removed, all packages from apache2, php, rtorrent and\n\
- rutorrent.\n\
+All downloaded files will be deleted too, also all config files\n\
+and everything under the apache2 document root /var/www.\n\
 \n\
- All downloaded files will be deleted too, also all config files\n\
- and everything under the apache2 document root /var/www.\n\
+A system cleanup with apt autoremove will finalize this.\n\
+There will nothing left behind, and nothing ask after this.\n\
 \n\
- A system cleanup with apt autoremove will finalize this.\n\
-\n\
- There will nothing left behind, and nothing ask after this.
+\ZuKeep:\Zn\n\
+Does the same as above but keep the basedir and the softlink\n\
+to the rtorrent user homedir, so with all sessiondata an\n\
+reinstallation will restore the previous torrents.\n\
 "\
 	$height $width
 	EXITCODE=$?
@@ -2034,7 +2055,8 @@ function REMOVE_EVERYTHING () {
 	# 3 means user hit EXTRA button.
 	# 255 means user hit [Esc] key.
 	case $EXITCODE in
-	0)		REMOVE_ALL;;
+	0)		REMOVE_ALL true;;
+	3)		REMOVE_ALL false;;
 	1|255)	;;
 	esac
 	MENU
@@ -2046,7 +2068,7 @@ function REMOVE_ALL () {
 	activ_rutorrent=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect | cut -d'-' -f2)
 	rtorrent_rc_path=$(find / -name .rtorrent.rc)
 	rpc_socket_path=$(find / -name rpc.socket | rev | cut -d/ -f2- | rev)
-	rtorrent_basedir=$(find / -name rtorrent-*.log | rev | cut -d/ -f3- | rev)
+	rtorrent_basedir=$(find / -name rtorrent-*.log | rev | cut -d/ -f3- | rev | head -n 1)
 	softlink_link=$(find /home -type l | grep rtorrent)
 	
 	{
@@ -2056,7 +2078,7 @@ function REMOVE_ALL () {
 	fi
 	echo -e "XXX\n0\nRemove installation of rtorrent & rutorrent\nXXX"
 	
-	echo -e "XXX\n5\nStop systemctl services\nXXX"
+	echo -e "XXX\n5\nStop systemd services\nXXX"
 	systemctl stop rtorrent.service 1>> $removelogfile
 	systemctl disable rtorrent.service 2>> $removelogfile
 	rm /etc/systemd/system/rtorrent.service
@@ -2065,30 +2087,38 @@ function REMOVE_ALL () {
 	systemctl disable apache2.service 2>> $removelogfile
 	systemctl daemon-reload 1>> $removelogfile
 	
-	echo -e "XXX\n10\nRemove softlink\nXXX"
-	if ( find /home -type l | grep -cq rtorrent )
+	if $1
 	then
-		unlink $(find /home -type l | grep rtorrent) 2>> $removelogfile
+		echo -e "XXX\n10\nRemove softlink\nXXX"
+		if ( find /home -type l | grep -cq rtorrent )
+		then
+			unlink $(find /home -type l | grep rtorrent) 2>> $removelogfile
+		fi
 	fi
 	
 	echo -e "XXX\n30\nRemove Apache and PHP\nXXX"
-	(time apt-get purge -y apache2 apache2-utils apache2-bin php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION) >> $removelogfile 2>&1
+	apt-get purge -y apache2 apache2-utils apache2-bin php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION >> $removelogfile 2>&1
 	rm -R /var/www $(whereis apache2 | cut -d: -f2)
 	
 	echo -e "XXX\n50\nRemove rtorrent\nXXX"
-	(time apt-get purge -y rtorrent) >> $removelogfile 2>&1
+	apt-get purge -y rtorrent >> $removelogfile 2>&1
 	
 	echo -e "XXX\n60\nRemove ruTorrent plugins\nXXX"
-	(time apt-get purge -y ffmpeg libzen0v5 libmediainfo0v5 mediainfo unrar-free sox libsox-fmt-mp3) >> $removelogfile 2>&1
-	(time sudo python$python_version_major -m pip uninstall -y cloudscraper --quiet) 1>> $removelogfile 2>&1
+	apt-get purge -y ffmpeg libzen0v5 libmediainfo0v5 mediainfo unrar-free sox libsox-fmt-mp3 >> $removelogfile 2>&1
+	sudo python$python_version_major -m pip uninstall -y cloudscraper --quiet 1>> $removelogfile 2>&1
 	
 	echo -e "XXX\n70\nClean system (apt autoremove)\nXXX"
-	(time apt-get autoremove -y) >> $removelogfile 2>&1
+	apt-get autoremove -y >> $removelogfile 2>&1
 	
 	echo -e "XXX\n90\nRemove config files\nXXX"
-	(time rm $rtorrent_rc_path) >> $removelogfile 2>&1
-	(time rm -R $rpc_socket_path) >> $removelogfile 2>&1
-	(time rm -R $rtorrent_basedir) >> $removelogfile 2>&1
+	rm $rtorrent_rc_path >> $removelogfile 2>&1
+	rm -R $rpc_socket_path >> $removelogfile 2>&1
+	
+	if $1
+	then
+		rm -R $rtorrent_basedir >> $removelogfile 2>&1
+	fi
+	
 	echo -e "XXX\n100\nRemoving complete\nXXX"
 	} | dialog --begin $small_x $y --gauge "Please wait while installing" $small_height $width 0
 	
@@ -2096,9 +2126,16 @@ function REMOVE_ALL () {
 	sleep 2
 	tput cnorm
 	
+	if $1
+	then
+		one=""
+	else
+		one="\n Keep files & folders:\n"
+	fi
+	
 	dialog --title "Removing complete" --stdout --begin $x $y --extra-button --extra-label "Show" --ok-label "Exit" --colors --msgbox "\
 \n\
- Removed:\n\
+ Removed  packages:\n\
  Apache2    (\Z4$apache2_version\Zn) + dependencies\n\
  PHP        (\Z4$php_version\Zn) + dependencies\n\
  rtorrent   (\Z4$rtorrent_version\Zn) + dependencies\n\
@@ -2107,8 +2144,9 @@ function REMOVE_ALL () {
  Removed files & folders:\n\
  .rtorrent.rc          \Z4$rtorrent_rc_path\Zn\n\
  rpc.socket            \Z4$rpc_socket_path\Zn\n\
- rtorrent basedir      \Z4$rtorrent_basedir\Zn\n\
+ $one
  softlink              \Z4$softlink_link\Zn\n\
+ rtorrent basedir      \Z4$rtorrent_basedir\Zn\n\
 \n\
  The uninstallation is logged in the remove.log"\
 	$height $width
