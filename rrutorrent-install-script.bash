@@ -10,7 +10,7 @@ LOG_REDIRECTION="/dev/null"
 #Remove Logfile
 removelogfile=remove.log
 # Script versionnumber
-script_versionumber=1.5
+script_versionumber=1.6
 # Window dimensions
 height=20
 small_height=6
@@ -42,26 +42,27 @@ fi
 
 if [[ $distributor == "ubuntu" || $distributor == "linuxmint" ]]
 then
-	debian_version=$(cat /etc/debian_version | cut -d"/" -f1)
+	debian_version=$(cat /etc/debian_version | cut -d'/' -f1)
 	codename="$codename ($debian_version)"
 fi
 
 #rtorrent
 rtorrent_version=$(apt-cache policy rtorrent | head -3 | tail -1 | cut -d' ' -f4)
-rtorrent_version_micro=${rtorrent_version:4:1}
+rtorrent_version_micro=$(echo "$rtorrent_version" | cut -d'-' -f1 | cut -d'.' -f3)
 libtorrent_version=$(apt-cache policy libtorrent?? | head -3 | tail -1 | cut -d' ' -f4)
 
 #python
 python_path=$(ls -l /usr/bin/python? | tail -1 | rev | cut -d' ' -f3 | rev)
-python_version="$($python_path -V | cut -d' ' -f2)"
-python_version_major=${python_version:0:1}
+python_version=$($python_path -V | cut -d' ' -f2)
+python_version_major=$(echo "$python_version" | cut -d'.' -f1)
+python_version_minor=$(echo "$python_version" | cut -d'.' -f2)
 python_pip=python$python_version_major-pip
 
 #php
 #php_version="$(apt-cache policy php | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1)"
-php_version="$(apt-cache policy php | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1-3)"
+php_version=$(apt-cache policy php | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1-3)
 #apache2
-apache2_version="$(apt-cache policy apache2 | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1)"
+apache2_version=$(apt-cache policy apache2 | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1)
 
 ## get mini UID limit ##
 low=$(grep "^UID_MIN" /etc/login.defs | cut -d' ' -f2)
@@ -134,8 +135,8 @@ function MENU {
 		               "4" "Allow SSH"
 		               "5" "Deny SSH"
 		               "7" "Install webserver & php"
-		               "8" "Install rtorrent on User \Z4$(who am i | cut -d" " -f1)\Zn"
-		               "E" "Edit rtorrent.rc on User \Z4$(who am i | cut -d" " -f1)\Zn")
+		               "8" "Install rtorrent on User \Z4$(who am i | cut -d' ' -f1)\Zn"
+		               "E" "Edit rtorrent.rc on User \Z4$(who am i | cut -d' ' -f1)\Zn")
 	fi
 	
 	#	               "Z" "Install Complete"
@@ -206,8 +207,8 @@ function MENU_OPTIONS () {
 	4)	ALLOW_SSH;;
 	5)	DENY_SSH;;
 	7)	APACHE2;;
-	8)	RTORRENT_LOCAL "$(who am i | cut -d" " -f1)";;
-	E)	EDIT_RTORRENTRC "$(who am i | cut -d" " -f1)";;
+	8)	RTORRENT_LOCAL "$(who am i | cut -d' ' -f1)";;
+	E)	EDIT_RTORRENTRC "$(who am i | cut -d' ' -f1)";;
 	Z)	INSTALL_COMPLETE;;
 	N)	SCRIPT;;
 	3)	SELECT_USER;;
@@ -215,7 +216,7 @@ function MENU_OPTIONS () {
 }
 
 function HEADER {
-	systemupdate=$(stat  /var/cache/apt/ | head -6 | tail -1 | cut -d' ' -f2- | cut -d. -f1)
+	systemupdate=$(stat  /var/cache/apt/ | head -6 | tail -1 | cut -d' ' -f2- | cut -d'.' -f1)
 	dialog \
 	--backtitle "last systemupdate on $systemupdate" \
 	--title "System Information" \
@@ -288,11 +289,11 @@ function LICENSE {
 function CHANGELOG {
 	#https://superuser.com/questions/802650/make-a-web-request-cat-response-to-stdout
 	# local homedir
-	#link=$(cat $(getent passwd "$(who am i | cut -d" " -f1)" | cut -d: -f6)/changelog)
-	#link=$(cat /home/$(who am i | cut -d" " -f1)/changelog)
+	#link=$(cat $(getent passwd "$(who am i | cut -d' ' -f1)" | cut -d':' -f6)/changelog)
+	#link=$(cat /home/$(who am i | cut -d' ' -f1)/changelog)
 	# github
 	link=$(wget -q -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/changelog)
-	actuall_v=$(wget -qq -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-script.bash | grep -m1 script_versionumber | cut -d= -f2)
+	actuall_v=$(wget -qq -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-script.bash | grep -m1 script_versionumber | cut -d'=' -f2)
 	
 	if [[ "$script_versionumber" < "$actuall_v" ]]
 	then
@@ -360,9 +361,9 @@ function PRESENT_USER () {
 	echo "Username:"
 	echo "$1"
 	echo "Group:"
-	echo "$(grep "$(id -u $1)" /etc/group | cut -d":" -f1)"
+	echo "$(grep "$(id -u $1)" /etc/group | cut -d':' -f1)"
 	echo "home:"
-	echo "$(getent passwd "$1" | cut -d: -f6)"
+	echo "$(getent passwd "$1" | cut -d':' -f6)"
 }
 
 function ADD_USER () {
@@ -402,7 +403,7 @@ function ADD_USER () {
 
 function CREATE_USER () {
 	arr=("$@")
-	
+	#https://acloudguru.com/blog/engineering/conditions-in-bash-scripting-if-statements
 	unset state
 	if [ -z "${arr[0]}" ]
 	then
@@ -684,8 +685,8 @@ function RTORRENT () {
 	USER[0]=
 	USER[1]=$1
 	USER[2]=
-	USER[3]=$(grep "$(id -u $1)" /etc/group | cut -d":" -f1)
-	USER[4]=$(getent passwd "$1" | cut -d: -f6)
+	USER[3]=$(grep "$(id -u $1)" /etc/group | cut -d':' -f1)
+	USER[4]=$(getent passwd "$1" | cut -d':' -f6)
 	USER[5]=
 	
 	#echo ${USER[1]}
@@ -791,8 +792,8 @@ function EDIT_RTORRENTRC () {
 	USER[0]=
 	USER[1]=$1
 	USER[2]=
-	USER[3]=$(grep "$(id -u $1)" /etc/group | cut -d":" -f1)
-	USER[4]=$(getent passwd "$1" | cut -d: -f6)
+	USER[3]=$(grep "$(id -u $1)" /etc/group | cut -d':' -f1)
+	USER[4]=$(getent passwd "$1" | cut -d':' -f6)
 	USER[5]=
 	# 6 Portrange, 7 Portrange min, 8 Portrange max, 9 Randomportset, 10 rtorrent basedir
 	USER[6]=$(grep 'port_range.set' ${USER[4]}/.rtorrent.rc | cut -d' ' -f3)
@@ -935,7 +936,7 @@ function SSL_FOR_WEBSERVER () {
 function SELF_SIGNED () {
 	if [[ $(a2query -s | cut -d' ' -f1 | grep -v https_redirect | grep -c -i "SS-SSL") -ne 0 ]]
 	then
-		DNS=$(openssl x509 -text -noout -in /etc/ssl/certs/rutorrent-selfsigned.crt | grep "DNS" | cut -d: -f2 | cut -d, -f1)
+		DNS=$(openssl x509 -text -noout -in /etc/ssl/certs/rutorrent-selfsigned.crt | grep "DNS" | cut -d':' -f2 | cut -d',' -f1)
 		dialog --title "Self Signed certification" --stdout --begin $small_x $y --ok-label "Abort" --no-cancel --extra-button --extra-label "Renew cert" --yesno "Activ VHost used allready SSL, aborted" $small_height $width
 		EXITCODE=$?
 		# Get exit status
@@ -1025,7 +1026,7 @@ EOF
 function HTTPS_CONF () {
 	CURRENT_CONF=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect)
 	# recover Overridestatus for SSL Page
-	status=$(grep "AllowOverride" /etc/apache2/sites-available/$CURRENT_CONF.conf | rev | cut -d" " -f1 | rev)
+	status=$(grep "AllowOverride" /etc/apache2/sites-available/$CURRENT_CONF.conf | rev | cut -d' ' -f1 | rev)
 	
 	a2enmod ssl 1> /dev/null
 	a2enmod headers 1> /dev/null
@@ -1236,7 +1237,15 @@ function INSTALL_RUTORRENT () {
 				#sed -i '/^\s*$pathToExternals.*/a \                "python"=> '"'"''"$python_path"''"'"',' /var/www/$SELECTED_CUT/conf/config.php
 				sed -i '/^\s*$pathToExternals.*/a \		"python"=> '"'"''"$python_path"''"'"',' /var/www/$SELECTED_CUT/conf/config.php
 				apt-get install -y $python_pip 1>> $LOG_REDIRECTION
-				sudo python$python_version_major -m pip install cloudscraper --quiet 1>> $LOG_REDIRECTION
+				
+				if [[ -e /usr/lib/python$python_version_major.$python_version_minor/EXTERNALLY-MANAGED ]]
+				then
+					echo "EXTERNALLY-MANAGED Python" 1>> $LOG_REDIRECTION
+					sudo python$python_version_major -m pip install cloudscraper --break-system-packages --quiet >> $LOG_REDIRECTION 2>&1
+				else
+					echo "No Python restrictions" 1>> $LOG_REDIRECTION
+					sudo python$python_version_major -m pip install cloudscraper --quiet >> $LOG_REDIRECTION 2>&1
+				fi
 			else
 				#:
 				echo "no _cloudflare" 1>> $LOG_REDIRECTION
@@ -1246,10 +1255,10 @@ function INSTALL_RUTORRENT () {
 	fi
 	
 	# only for install log needed
-	echo "rutorrent config.php"
-	cat /var/www/$SELECTED_CUT/conf/config.php
-	echo "Apache $SELECTED_CUT.conf vhost"
-	cat /etc/apache2/sites-available/$SELECTED_CUT.conf
+	echo "rutorrent config.php" 1>> $LOG_REDIRECTION
+	cat /var/www/$SELECTED_CUT/conf/config.php 1>> $LOG_REDIRECTION
+	echo "Apache $SELECTED_CUT.conf vhost" 1>> $LOG_REDIRECTION
+	cat /etc/apache2/sites-available/$SELECTED_CUT.conf 1>> $LOG_REDIRECTION
 }
 
 function CREATE_AND_ACTIVATE_CONF () {
@@ -1322,7 +1331,7 @@ function SET_NEW_VHOST () {
 
 function WEBAUTH_TOGGLE {
 	CURRENT_CONF=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect)
-	status=$(grep "AllowOverride" /etc/apache2/sites-available/$CURRENT_CONF.conf | rev | cut -d" " -f1 | rev)
+	status=$(grep "AllowOverride" /etc/apache2/sites-available/$CURRENT_CONF.conf | rev | cut -d' ' -f1 | rev)
 	
 	#     <tag1><item1>                 <status1>
 	AUTH=("off" "no Web Authentication" "OFF" "on" "with Web Authentication" "OFF")
@@ -1419,7 +1428,7 @@ function CREATE_WEBAUTH_USER () {
 	else
 		if [ -f "/var/www/$TARGET/.htpasswd" ]
 		then
-			if [[ $(grep ":" /var/www/$TARGET/.htpasswd | cut -d":" -f1 | grep -c ${arr[0]}) -ne 0 ]]
+			if [[ $(grep ":" /var/www/$TARGET/.htpasswd | cut -d':' -f1 | grep -c ${arr[0]}) -ne 0 ]]
 			then
 				answer1="User exist"
 				state="error"
@@ -1505,7 +1514,7 @@ function REMOVE_WEBAUTH_USER {
 		TARGET=$CURRENT_CONF
 	fi
 	
-	present_web=$(grep ":" /var/www/$TARGET/.htpasswd | cut -d":" -f1 | sort)
+	present_web=$(grep ":" /var/www/$TARGET/.htpasswd | cut -d':' -f1 | sort)
 	
 	last='""off'
 	actual_web_user=$(echo $present_web | sed 's/ /""off"/g')
@@ -1548,7 +1557,7 @@ function REMOVE_USER_FROM_WEBAUTH_AUTH () {
 }
 
 function SOFTLINK_TO_HOMEDIR {
-	rtorrentuser=$(find /home -name .rtorrent.rc | rev | cut -d"/" -f2 | rev)
+	rtorrentuser=$(find /home -name .rtorrent.rc | rev | cut -d'/' -f2 | rev)
 	status=$(ls -lrt /home/$rtorrentuser | grep "rtorrent" | grep -c "^l")
 	
 	#        <tag1><item1>                <status1><tag2><item2>                <status2>
@@ -1586,7 +1595,7 @@ function SOFTLINK_TO_HOMEDIR {
 }
 
 function TOGGLE_SOFTLINK () {
-	HOMEDIR=$(find /home -name .rtorrent.rc | rev | cut -d"/" -f2- | rev)
+	HOMEDIR=$(find /home -name .rtorrent.rc | rev | cut -d'/' -f2- | rev)
 	status=$(ls -lrt /$HOMEDIR | grep "rtorrent" | grep -c "^l")
 	location=$(grep "method.insert = cfg.basedir" $HOMEDIR/.rtorrent.rc | cut -d'"' -f2)
 	#echo "$location"
@@ -1682,8 +1691,8 @@ function SCRIPT () {
 		USER[0]="existing"
 		USER[1]=$SELECTED
 		USER[2]=
-		USER[3]=$(grep "$(id -u $SELECTED)" /etc/group | cut -d":" -f1)
-		USER[4]=$(getent passwd "$SELECTED" | cut -d: -f6)
+		USER[3]=$(grep "$(id -u $SELECTED)" /etc/group | cut -d':' -f1)
+		USER[4]=$(getent passwd "$SELECTED" | cut -d':' -f6)
 		USER[5]=
 		;;
 	1|255)	MENU;;
@@ -2067,8 +2076,8 @@ function REMOVE_ALL () {
 	
 	activ_rutorrent=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect | cut -d'-' -f2)
 	rtorrent_rc_path=$(find / -name .rtorrent.rc)
-	rpc_socket_path=$(find / -name rpc.socket | rev | cut -d/ -f2- | rev)
-	rtorrent_basedir=$(find / -name rtorrent-*.log | rev | cut -d/ -f3- | rev | head -n 1)
+	rpc_socket_path=$(find / -name rpc.socket | rev | cut -d'/' -f2- | rev)
+	rtorrent_basedir=$(find / -name rtorrent-*.log | rev | cut -d'/' -f3- | rev | head -n 1)
 	softlink_link=$(find /home -type l | grep rtorrent)
 	
 	{
@@ -2098,7 +2107,7 @@ function REMOVE_ALL () {
 	
 	echo -e "XXX\n30\nRemove Apache and PHP\nXXX"
 	apt-get purge -y apache2 apache2-utils apache2-bin php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION >> $removelogfile 2>&1
-	rm -R /var/www $(whereis apache2 | cut -d: -f2)
+	rm -R /var/www $(whereis apache2 | cut -d':' -f2)
 	
 	echo -e "XXX\n50\nRemove rtorrent\nXXX"
 	apt-get purge -y rtorrent >> $removelogfile 2>&1

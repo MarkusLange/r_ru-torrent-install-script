@@ -1,7 +1,15 @@
+Version 1.6
+* Since Python PEP 668 – Marking Python base environments as
+  "externally managed" can be set in linux add the command-line
+  flag --break-system-packages for the cloudscraper installation
+  if needed (Debian Bookworm for example, pip version 23.0.1)
+* Add more silence inside rutorrent installation
+-----------------------------------------------------------------
+
 Version 1.5
 * Expand Remove with an option to keep the downloads and torrent
   data
-* minor fixes for better reinstallation
+* Minor fixes for better reinstallation
 -----------------------------------------------------------------
 
 Version 1.4
