@@ -1,3 +1,11 @@
+Version 1.7
+* Change sort order in Change VHost
+* Move ruTorrent list generation from release to tags since
+  release doesn't contain the last betas anymore
+* Change permissions from .rtorrent.rc from 755 to 644
+* Performance tweak on UPDATE_RUTORRENT function
+-----------------------------------------------------------------
+
 Version 1.6
 * Since Python PEP 668 – Marking Python base environments as
   "externally managed" can be set in linux add the command-line

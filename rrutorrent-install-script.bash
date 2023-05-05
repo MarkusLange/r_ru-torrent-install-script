@@ -9,13 +9,13 @@ LOG_REDIRECTION="/dev/null"
 #LOG_REDIRECTION=$logfile
 #Remove Logfile
 removelogfile=remove.log
-# Script versionnumber
-script_versionumber=1.6
-# Window dimensions
+#Script versionnumber
+script_versionumber=1.7
+#Window dimensions
 height=20
 small_height=6
 width=70
-# Window position
+#Window position
 x=2
 small_x=8
 y=5
@@ -75,9 +75,10 @@ system_low=1
 let system_high=$((low - 1))
 
 #rutorrents
-ALL_VERSION=$(wget -q https://api.github.com/repos/Novik/ruTorrent/releases -O - | grep tag_name | cut -d'"' -f4)
-# remove v4.0 "All Linux Distributions should mark version 4 as "unstable" due to caching issues and use the v4.0.1 hot fix release instead"
-# https://github.com/Novik/ruTorrent/releases/tag/v4.0.1-hotfix
+#ALL_VERSION=$(wget -q https://api.github.com/repos/Novik/ruTorrent/releases -O - | grep tag_name | cut -d'"' -f4)
+ALL_VERSION=$(wget -q https://api.github.com/repos/Novik/ruTorrent/tags -O - | grep name | cut -d'"' -f4 | grep -v 'rutorrent\|plugins')
+#remove v4.0 "All Linux Distributions should mark version 4 as "unstable" due to caching issues and use the v4.0.1 hot fix release instead"
+#https://github.com/Novik/ruTorrent/releases/tag/v4.0.1-hotfix
 STABLE_VERSION=$(echo "$ALL_VERSION" | grep -v 'beta\|v4.0-stable')
 #set rutorrent list to all versions(ALL_VERSION) or stable versions(STABLE_VERSION) only
 LIST=$STABLE_VERSION
@@ -699,7 +700,7 @@ function RTORRENT () {
 	wget -q -O - "https://raw.githubusercontent.com/wiki/rakshasa/rtorrent/CONFIG-Template.md" | sed -ne "/^######/,/^### END/p" | sed -re "s:/home/USERNAME:/srv:" >${USER[4]}/.rtorrent.rc
 	
 	chown -R ${USER[1]}:${USER[3]} ${USER[4]}/.rtorrent.rc
-	chmod -R 775 ${USER[4]}/.rtorrent.rc
+	chmod -R 644 ${USER[4]}/.rtorrent.rc
 	
 	# granted rtorrent user to run folder with group rights
 	sudo usermod -a -G www-data ${USER[1]}
@@ -834,17 +835,19 @@ function CHANGE_RTORRENTRC () {
 	--begin $x $y \
 	--trim \
 	--extra-button \
+	--colors \
 	--extra-label "Change Basedir" \
 	--output-separator $separator \
-	--mixedform " Port Range defines the usable Ports for rtorrent\n
-	Random Listening Port let rtorrent set the Port randomly\n
-	rtorrent basedir: \n
-	 └── rtorrent \n
-	     ├── .session \n
-	     ├── download \n
-	     ├── log \n
-	     └── watch \n
-	\n
+	--default-button "ok" \
+	--mixedform "Port Range defines the usable Ports for rtorrent\n
+Random Listening Port let rtorrent set the Port randomly\n
+rtorrent folder stucture:\n
+	\Z4$NEW_DLFOLDER\Zn \n
+	 └── /rtorrent \n
+	     ├── /.session \n
+	     ├── /download \n
+	     ├── /log \n
+	     └── /watch \n
 	"\
 	$height $width 0 \
 	"Port Range                    :" 1 1  " $NEW_PORT_RANGE_MIN" 1 33  6 0 0 \
@@ -1125,8 +1128,10 @@ function LET_ENCRYPT_FOR_SSL () {
 function UPDATE_RUTORRENT () {
 	dialog  --stdout --begin $small_x $y --infobox "searching for rtorrent (rpc.socket)..." $small_height $width
 	file=rpc.socket
-	GREP_RPCSOCKET=$(find / -name $file)
-	LINES=$(find / -name $file | grep -c $file)
+	#GREP_RPCSOCKET=$(find / -name $file)
+	#LINES=$(find / -name $file | grep -c $file)
+	GREP_RPCSOCKET=$(find /run/ -name $file)
+	LINES=$(echo $GREP_RPCSOCKET | grep -c $file)
 	
 	if [ -z "$GREP_RPCSOCKET" ]
 	then
@@ -1202,7 +1207,8 @@ function INSTALL_RUTORRENT () {
 		SELECTED_CUT="ruTorrent-${SELECTED:1}"
 		
 		cd /var/www
-		wget -q https://github.com/Novik/ruTorrent/archive/$SELECTED.zip -O $SELECTED_CUT.zip
+		#wget -q https://github.com/Novik/ruTorrent/archive/$SELECTED.zip -O $SELECTED_CUT.zip
+		wget -q https://github.com/Novik/ruTorrent/archive/refs/tags/$SELECTED.zip -O $SELECTED_CUT.zip
 		unzip -qqo $SELECTED_CUT.zip
 		rm $SELECTED_CUT.zip
 		
@@ -1295,7 +1301,7 @@ EOF
 
 function CHANGE_VHOST () {
 	CURRENT_CONF=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect)
-	ALL_VHOST=$(ls /etc/apache2/sites-available/ | grep -v 'https_redirect\|000-default\|default-ssl' | sed 's/.conf/""off"/g' | sed '/'"$CURRENT_CONF"'/ s/off/on/')
+	ALL_VHOST=$(ls /etc/apache2/sites-available/ | grep -v 'https_redirect\|000-default\|default-ssl' | sort -r | sed 's/.conf/""off"/g' | sed '/'"$CURRENT_CONF"'/ s/off/on/')
 	ALL_VHOST_NO_SPACE=$(echo $ALL_VHOST | sed 's/ //g')
 	IFS='"' read -a VHOSTS <<< "$ALL_VHOST_NO_SPACE"
 	
@@ -1622,7 +1628,7 @@ The scripted installation ask you some questions about the\n\
 user for rtorrent, the ruTorrent version and other stuff,\n\
 after that you will see a list with all you have selected.\n\
 \n\
-You can shortcut everything with hitting \Zu\"enter\"\ZU to get a\n\
+You can shortcut everything with hitting \"\Zuenter\ZU\" to get a\n\
 standard installation with the most common result, newest\n\
 versions, and add all under the users home folder via softlink\n\
 \n\
@@ -1791,17 +1797,19 @@ $answer2
 	--begin $x $y \
 	--trim \
 	--extra-button \
+	--colors \
 	--extra-label "Change Basedir" \
 	--output-separator $separator \
 	--default-button "ok" \
-	--mixedform " Port Range defines the usable Ports for rtorrent\n
-	Random Listening Port let rtorrent set the Port randomly\n
-	rtorrent basedir:\n
-	 └── rtorrent \n
-	     ├── .session \n
-	     ├── download \n
-	     ├── log \n
-	     └── watch \n
+	--mixedform "Port Range defines the usable Ports for rtorrent\n
+Random Listening Port let rtorrent set the Port randomly\n
+rtorrent folder stucture:\n
+	\Z4$DLFOLDER\Zn \n
+	 └── /rtorrent \n
+	     ├── /.session \n
+	     ├── /download \n
+	     ├── /log \n
+	     └── /watch \n
 	\n
 	"\
 	$height $width 0 \
