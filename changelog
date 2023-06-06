@@ -1,3 +1,19 @@
+Version 1.8
+* Minor text fixes
+* Correct shown command in "Add User to WebAuth"
+* Correct WebAuth messagebox size after user is created
+* Correct uninstall of cloudscraper with "externally managed"
+  python
+* Remove config-file for PID directory creation in run as well
+  when using Remove installation
+* Fixing bug with install.log stopped logging after rtorrent
+  install section due folder issus
+* Move logfile and ownership to local user
+* Support $localhostmode in ruTorrent (4.0.1+)
+* Fix and expand rtorrent.service for tmux based installations
+* Add tmux explainations inside the script
+-----------------------------------------------------------------
+
 Version 1.7
 * Change sort order in Change VHost
 * Move ruTorrent list generation from release to tags since

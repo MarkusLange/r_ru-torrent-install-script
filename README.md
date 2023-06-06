@@ -1,5 +1,5 @@
 # rru-torrent-install-script
-A menu based rtorrent &amp; rutorrent installation script
+A menu based [rtorrent](https://github.com/rakshasa/rtorrent) &amp; [rutorrent](https://github.com/Novik/ruTorrent) installation script
 
 ![Logo](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/menu_with_log.PNG)
 
@@ -39,12 +39,13 @@ Installation Completed
     - Debian (tested 9+)
     - Ubuntu
     - Mint
+	- LMDE (Linux Mint Debian Edition)
     - Raspbian/Raspberry Pi OS
   - needs only wget and dialog, pre installation
   - choose a present user or add a new one for rtorrent
   - script keeps itself actuall (grep users and ruTorrent Version on startup)
-  - Web Authenification can de-/activate on will, user can add and remove
-  - SSL support Self Signed or Let's Encrypt certificate
+  - Web Authentication can de-/activate on will, users can add or remove via menu
+  - SSL support, Self Signed or Let's Encrypt certificate
   - Since max certifcate duration is 398 days added the option to renew the certificate on purpose, for Self Signed and Let's Encrypt (https://www.ssl.com/blogs/398-day-browser-limit-for-ssl-tls-certificates-begins-september-1-2020/)
   - HTTP to HTTPS redirection
   - shows installation log
@@ -54,16 +55,21 @@ Installation Completed
   - add option to remove everything installed with this script with the option to keep the downloads
 - ruTorrent
   - ruTorrent can easily updated
-  - add python path to rutorrent to support cloudflare (3.9+)
+  - add python path to ruTorrent to support cloudflare (3.9+)
   - included plugins supported and loaded
   - did not use deprecated libapache2-mod-scgi (last update 1.13-1.1 02 Jul 2013, https://metadata.ftp-master.debian.org/changelogs//main/s/scgi/scgi_1.13-1.1_changelog)
   - remove Serversignature from Unauthorized HTML redirect from WebAuth (https://www.inmotionhosting.com/support/server/apache/hide-apache-version-and-linux-os/)
+  - use localhostmode from ruTorrent (4.0.1+)
 - rtorrent
   - use of secure open_local instead of open_port from rtorrent with rutorrent (https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC)
-  - used latest rtorrent.rc direct from rtorrent github (https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template)
-  - used deamon.mode for rtorrent if possible (rtorrent 0.9.7+)
+  - uses latestest rtorrent.rc direct from rtorrent github (https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template)
+  - uses deamon.mode for rtorrent if possible (rtorrent 0.9.7+)
   - move open_local socket to `/run` and rtorrent basedir to `/srv` (https://ubuntu.com/blog/private-home-directories-for-ubuntu-21-04)
   - add softlink to homedir of the rtorrrent user from the rtorrent basedir
+  
+## Misc ##
+- rtorrent
+  - List of rtorrent versions in different linux distributions/releases (https://repology.org/project/rtorrent/versions)
 
 ## To-Do's ##
 - more details

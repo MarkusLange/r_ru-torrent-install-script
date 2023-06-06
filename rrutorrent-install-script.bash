@@ -3,14 +3,16 @@ export NCURSES_NO_UTF8_ACS=1
 separator=":"
 #Fullmenu true,false
 fullmenu=false
+#user associated with stdin "who am i"
+stdin_user=$(who -m | cut -d' ' -f1)
 #Output Redirection /dev/null or logfile
-logfile=install.log
+logfile=/home/$stdin_user/install.log
 LOG_REDIRECTION="/dev/null"
 #LOG_REDIRECTION=$logfile
 #Remove Logfile
-removelogfile=remove.log
+removelogfile=/home/$stdin_user/remove.log
 #Script versionnumber
-script_versionumber=1.7
+script_versionumber=1.8
 #Window dimensions
 height=20
 small_height=6
@@ -136,8 +138,8 @@ function MENU {
 		               "4" "Allow SSH"
 		               "5" "Deny SSH"
 		               "7" "Install webserver & php"
-		               "8" "Install rtorrent on User \Z4$(who am i | cut -d' ' -f1)\Zn"
-		               "E" "Edit rtorrent.rc on User \Z4$(who am i | cut -d' ' -f1)\Zn")
+		               "8" "Install rtorrent on User \Z4$stdin_user\Zn"
+		               "E" "Edit rtorrent.rc on User \Z4$stdin_user\Zn")
 	fi
 	
 	#	               "Z" "Install Complete"
@@ -208,8 +210,8 @@ function MENU_OPTIONS () {
 	4)	ALLOW_SSH;;
 	5)	DENY_SSH;;
 	7)	APACHE2;;
-	8)	RTORRENT_LOCAL "$(who am i | cut -d' ' -f1)";;
-	E)	EDIT_RTORRENTRC "$(who am i | cut -d' ' -f1)";;
+	8)	RTORRENT_LOCAL "$stdin_user";;
+	E)	EDIT_RTORRENTRC "$stdin_user";;
 	Z)	INSTALL_COMPLETE;;
 	N)	SCRIPT;;
 	3)	SELECT_USER;;
@@ -240,7 +242,7 @@ Software Versions:\n\
    libtorrent:             \Z4$libtorrent_version\Z0\n\
    Python:                 \Z4$python_version\Z0\n\
    Apache2:                \Z4$apache2_version\Z0\n\
-   PHP                     \Z4$php_version\Z0"\
+   PHP:                    \Z4$php_version\Z0"\
 	$height $width
 	EXITCODE=$?
 	# Get exit status
@@ -290,8 +292,8 @@ function LICENSE {
 function CHANGELOG {
 	#https://superuser.com/questions/802650/make-a-web-request-cat-response-to-stdout
 	# local homedir
-	#link=$(cat $(getent passwd "$(who am i | cut -d' ' -f1)" | cut -d':' -f6)/changelog)
-	#link=$(cat /home/$(who am i | cut -d' ' -f1)/changelog)
+	#link=$(cat $(getent passwd "$stdin_user" | cut -d':' -f6)/changelog)
+	#link=$(cat /home/$stdin_user/changelog)
 	# github
 	link=$(wget -q -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/changelog)
 	actuall_v=$(wget -qq -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-script.bash | grep -m1 script_versionumber | cut -d'=' -f2)
@@ -732,8 +734,8 @@ function RTORRENT () {
 		RTORRENT_SERVICE ${USER[1]}
 	fi
 	
-	echo "rtorrent rtorrent.service" 1>> $LOG_REDIRECTION 
-	cat /etc/systemd/system/rtorrent.service 1>> $LOG_REDIRECTION
+	echo "rtorrent.service" 1>> $LOG_REDIRECTION
+	cat /etc/systemd/system/rtorrent.service >> $LOG_REDIRECTION
 }
 
 function CREATE_TMPFILES () {
@@ -749,6 +751,26 @@ EOF
 	chmod -R 775 /run/rtorrent
 }
 
+#tmux session explanations
+#http://man.openbsd.org/OpenBSD-current/man1/tmux.1
+#https://coderwall.com/p/omqa2w/tmux-basics
+#https://stackoverflow.com/questions/39523167/how-do-you-send-keys-to-a-specific-window-in-tmux
+
+#tmux -2 new-session -d -s rtorrent-session /usr/bin/rtorrent
+#
+#     -2                                                      [Force tmux to assume the terminal supports 256 colours. This is equivalent to -T 256]
+#        new-session    -s rtorrent-session                   [Creating named session which can be used we want the session to run the background]
+#                    -d                                       [detach session from current terminal]
+#                                           /usr/bin/rtorrent [Programm that startet inside the tmux session]
+#
+#tmux send-keys -t rtorrent-session C-q
+#     send-keys -t                                            [Send a key or keys to a window or client, target panel {-t}]
+#                  rtorrent-session                           [{session}]
+#                                   C-q                       [Send keys]
+#
+#tmux kill-session -t rtorrent-session
+#     kill-session -t                                         [Destroy the given session]
+
 function RTORRENT_TMUX_SERVICE () {
 	cat > "/etc/systemd/system/rtorrent.service" <<-EOF
 [Unit]
@@ -760,8 +782,8 @@ After=apache2.service
 Type=oneshot
 RemainAfterExit=yes
 User=$1
-ExecStart=/usr/bin/tmux -2 new-session -d -s rtorrent rtorrent
-ExecStop=/usr/bin/tmux send-keys -t rtorrent:rtorrent C-q
+ExecStart=/usr/bin/tmux -2 new-session -d -s rtorrent-session /usr/bin/rtorrent
+ExecStop=/usr/bin/tmux send-keys -t rtorrent-session C-q
 
 [Install]
 WantedBy=default.target
@@ -880,11 +902,8 @@ rtorrent folder stucture:\n
 	0)		sed -i '/port_range.set/ s/'"$PORT_RANGE"'/'"$NEW_PORT_RANGE"'/' $HOMEDIR/.rtorrent.rc
 			sed -i '/port_random.set/ s/'"$PORT_SET"'/'"$SELECTED"'/' $HOMEDIR/.rtorrent.rc
 			sed -i 's#'"$DLFOLDER"'#'"$NEW_DLFOLDER"'#' $HOMEDIR/.rtorrent.rc
-			#chown -R ${arr[1]}:${arr[3]} $NEW_DLFOLDER
-			cd $NEW_DLFOLDER
-			mkdir -p rtorrent
-			chown -R ${arr[1]}:www-data rtorrent
-			cd ~;;
+			mkdir -p $NEW_DLFOLDER/rtorrent
+			chown -R ${arr[1]}:www-data $NEW_DLFOLDER/rtorrent;;
 	1|255)	;;
 	3)		CHANGE_DLFOLDER "${arr[@]}";;
 	esac
@@ -1211,6 +1230,7 @@ function INSTALL_RUTORRENT () {
 		wget -q https://github.com/Novik/ruTorrent/archive/refs/tags/$SELECTED.zip -O $SELECTED_CUT.zip
 		unzip -qqo $SELECTED_CUT.zip
 		rm $SELECTED_CUT.zip
+		cd ~
 		
 		#https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC
 		sed -i 's|scgi_port = 5000|scgi_port = 0|' /var/www/$SELECTED_CUT/conf/config.php
@@ -1219,9 +1239,15 @@ function INSTALL_RUTORRENT () {
 		#move ruTorrent errorlog to a folder writeable by www-data
 		sed -i 's#/tmp/errors.log#/var/log/apache2/rutorrent-errors.log#' /var/www/$SELECTED_CUT/conf/config.php
 		
+		#use localHostedMode if available (rutorrent 4.01 and above)
+		if (grep -cq "localHostedMode" /var/www/$SELECTED_CUT/conf/config.php)
+		then
+			sed -i '/localHostedMode/ s/false/true/' /var/www/$SELECTED_CUT/conf/config.php
+		fi
+		
 		chown -R www-data:www-data /var/www/$SELECTED_CUT
 		chmod -R 775 /var/www/$SELECTED_CUT
-		cd ~
+		#cd ~
 		
 		# dependencies for ruTorrent addons
 		#                                                                        spectrogram Plugin
@@ -1504,10 +1530,10 @@ AuthUserFile /var/www/$TARGET/.htpasswd
 EOF
 		fi
 		
-		chown -R www-data.www-data /var/www/$TARGET/.ht*
+		chown -R www-data:www-data /var/www/$TARGET/.ht*
 		
 		systemctl reload apache2.service
-		dialog --title "Done" --stdout --begin $x $y --msgbox "\nNew User ${arr[0]} created" $height $width
+		dialog --title "Done" --stdout --begin $small_x $y --msgbox "\nNew WebAuth User ${arr[0]} created" $small_height $width
 	fi
 }
 
@@ -1933,11 +1959,11 @@ function INSTALLATION () {
 	
 	echo "System update" 1>> $LOG_REDIRECTION
 	echo -e "XXX\n0\nUpdate System!\nXXX"
-	(time SYSTEM_UPDATE) >> $logfile 2>&1
+	(time SYSTEM_UPDATE) >> $LOG_REDIRECTION 2>&1
 	
 	echo "Install Apache" 1>> $LOG_REDIRECTION
 	echo -e "XXX\n30\nInstall Apache and PHP\nXXX"
-	(time APACHE2) >> $logfile 2>&1
+	(time APACHE2) >> $LOG_REDIRECTION 2>&1
 	
 	# USER[_] 0 User attribute, 1 Username, 2 User password, 3 Usergroup = Username, 4 User homedir, 5 User SSH status
 	if [[ ${USER[0]} == "to_create" ]]
@@ -1959,7 +1985,7 @@ function INSTALLATION () {
 	
 	echo "Install rtorrent" 1>> $LOG_REDIRECTION
 	echo -e "XXX\n65\nInstall and configure rtorrent\nXXX"
-	(time RTORRENT ${USER[1]}) >> $logfile 2>&1
+	(time RTORRENT ${USER[1]}) >> $LOG_REDIRECTION 2>&1
 	
 	PORT_RANGE=$(grep 'port_range.set' ${USER[4]}/.rtorrent.rc | cut -d' ' -f3)
 	PORT_SET=$(grep 'port_random.set' ${USER[4]}/.rtorrent.rc | cut -d' ' -f3)
@@ -1969,12 +1995,10 @@ function INSTALLATION () {
 	sed -i '/port_range.set/ s/'"$PORT_RANGE"'/'"${RC[0]}"'/' ${USER[4]}/.rtorrent.rc
 	sed -i '/port_random.set/ s/'"$PORT_SET"'/'"${RC[1]}"'/' ${USER[4]}/.rtorrent.rc
 	sed -i 's#'"$DLFOLDER"'#'"${RC[2]}"'#' ${USER[4]}/.rtorrent.rc
-	cd ${RC[2]}
-	mkdir -p rtorrent
-	#chown -R ${USER[1]}:${USER[3]} ${RC[2]}
-	chown -R ${USER[1]}:www-data rtorrent
-	cd ~
-		
+	
+	mkdir -p ${RC[2]}/rtorrent
+	chown -R ${USER[1]}:www-data ${RC[2]}/rtorrent
+	
 	echo "Enable rtorrent" 1>> $LOG_REDIRECTION
 	systemctl enable rtorrent.service 2>> $LOG_REDIRECTION
 	systemctl start rtorrent.service 1>> $LOG_REDIRECTION
@@ -1992,13 +2016,17 @@ function INSTALLATION () {
 	
 	echo "Install rutorrent" 1>> $LOG_REDIRECTION
 	echo -e "XXX\n70\nInstall and configure rutorrent\nXXX"
-	(time INSTALL_RUTORRENT $RUTORRENT_VERSION ${RC[2]}) >> $logfile 2>&1
+	(time INSTALL_RUTORRENT $RUTORRENT_VERSION ${RC[2]}) >> $LOG_REDIRECTION 2>&1
 	
 	echo -e "XXX\n100\nInstallation complete\nXXX"
 	} | dialog --begin $small_x $y --gauge "Please wait while installing" $small_height $width 0
+	
 	tput civis
 	sleep 2
 	tput cnorm
+	
+	#move installation logfile ownership to actual user
+	chown -R $stdin_user:$stdin_user $LOG_REDIRECTION
 	INSTALL_COMPLETE
 }
 
@@ -2122,7 +2150,16 @@ function REMOVE_ALL () {
 	
 	echo -e "XXX\n60\nRemove ruTorrent plugins\nXXX"
 	apt-get purge -y ffmpeg libzen0v5 libmediainfo0v5 mediainfo unrar-free sox libsox-fmt-mp3 >> $removelogfile 2>&1
-	sudo python$python_version_major -m pip uninstall -y cloudscraper --quiet 1>> $removelogfile 2>&1
+	#sudo python$python_version_major -m pip uninstall -y cloudscraper --quiet 1>> $removelogfile 2>&1
+	
+	if [[ -e /usr/lib/python$python_version_major.$python_version_minor/EXTERNALLY-MANAGED ]]
+	then
+		echo "EXTERNALLY-MANAGED Python" 1>> $removelogfile
+		sudo python$python_version_major -m pip uninstall -y cloudscraper --break-system-packages --quiet >> $removelogfile 2>&1
+	else
+		echo "No Python restrictions" 1>> $removelogfile
+		sudo python$python_version_major -m pip uninstall -y cloudscraper --quiet >> $removelogfile 2>&1
+	fi
 	
 	echo -e "XXX\n70\nClean system (apt autoremove)\nXXX"
 	apt-get autoremove -y >> $removelogfile 2>&1
@@ -2130,10 +2167,17 @@ function REMOVE_ALL () {
 	echo -e "XXX\n90\nRemove config files\nXXX"
 	rm $rtorrent_rc_path >> $removelogfile 2>&1
 	rm -R $rpc_socket_path >> $removelogfile 2>&1
+	rm /usr/lib/tmpfiles.d/rtorrent.conf >> $removelogfile 2>&1
 	
 	if $1
 	then
 		rm -R $rtorrent_basedir >> $removelogfile 2>&1
+	fi
+	
+	#remove instalation logfile if exist
+	if [ -f $logfile ]
+	then
+		rm -f $logfile
 	fi
 	
 	echo -e "XXX\n100\nRemoving complete\nXXX"
@@ -2142,6 +2186,9 @@ function REMOVE_ALL () {
 	tput civis
 	sleep 2
 	tput cnorm
+	
+	#move remove logfile ownership to actual user
+	chown -R $stdin_user:$stdin_user $removelogfile
 	
 	if $1
 	then
