@@ -1,3 +1,14 @@
+Version 1.9
+* Add option to switch from unrar-free to unrar-nonfree, add
+  repository if needed. Advanced features of version 3.0 archives
+  are not supported with unrar-free. Not everyone wants non-free
+  software on his linux this is optional
+* Fix some dialog boxes
+* Add some information to README.md
+* Differentiation between Raspbian and Raspberry Pi OS
+* Struct some variables new in the script header
+-----------------------------------------------------------------
+
 Version 1.8
 * Minor text fixes
 * Correct shown command in "Add User to WebAuth"

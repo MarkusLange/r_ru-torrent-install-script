@@ -1,5 +1,5 @@
 # rru-torrent-install-script
-A menu based [rtorrent](https://github.com/rakshasa/rtorrent) &amp; [rutorrent](https://github.com/Novik/ruTorrent) installation script
+A menu based [rtorrent](https://github.com/rakshasa/rtorrent) &amp; [ruTorrent](https://github.com/Novik/ruTorrent) installation script
 
 ![Logo](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/menu_with_log.PNG)
 
@@ -40,7 +40,8 @@ Installation Completed
     - Ubuntu
     - Mint
 	- LMDE (Linux Mint Debian Edition)
-    - Raspbian/Raspberry Pi OS
+    - Raspbian
+    - Raspberry Pi OS
   - needs only wget and dialog, pre installation
   - choose a present user or add a new one for rtorrent
   - script keeps itself actuall (grep users and ruTorrent Version on startup)
@@ -52,7 +53,8 @@ Installation Completed
   - script shows actuall changelog from git
   - will ask by itself for sudo if you start it without
   - script fully silent
-  - add option to remove everything installed with this script with the option to keep the downloads
+  - include option to remove everything installed with this script with the option to keep the downloads
+  - include a option to switch from unrar-free to unrar-nonfree (Advanced features of version 3.0 archives are not supported with unrar-free)
 - ruTorrent
   - ruTorrent can easily updated
   - add python path to ruTorrent to support cloudflare (3.9+)
@@ -63,19 +65,21 @@ Installation Completed
 - rtorrent
   - use of secure open_local instead of open_port from rtorrent with rutorrent (https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC)
   - uses latestest rtorrent.rc direct from rtorrent github (https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template)
-  - uses deamon.mode for rtorrent if possible (rtorrent 0.9.7+)
+  - uses deamon.mode for rtorrent if possible (0.9.7+)
+  - remove session_lock from rtorrent session so a restart works without complications 
   - move open_local socket to `/run` and rtorrent basedir to `/srv` (https://ubuntu.com/blog/private-home-directories-for-ubuntu-21-04)
   - add softlink to homedir of the rtorrrent user from the rtorrent basedir
   
 ## Misc ##
 - rtorrent
   - List of rtorrent versions in different linux distributions/releases (https://repology.org/project/rtorrent/versions)
+  - List of unrar-nonfree versions in different linux distributions/releases (https://repology.org/project/unrar-nonfree/versions)
 
 ## To-Do's ##
 - more details
 - ~~add screenshots to readme~~
 - ~~more screenshots~~
 - explain the benefits
-- add links as knowledgebase for everyone
+- ~~add links as knowledgebase for everyone~~
 - table of tested Debian based Linux systems
 - add window that shows the local installation with all information

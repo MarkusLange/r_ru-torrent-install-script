@@ -1,18 +1,24 @@
 #!/bin/bash
 export NCURSES_NO_UTF8_ACS=1
+#dialog output seperator
 separator=":"
-#Fullmenu true,false
-fullmenu=false
 #user associated with stdin "who am i"
 stdin_user=$(who -m | cut -d' ' -f1)
-#Output Redirection /dev/null or logfile
+
+#Install Logfile
 logfile=/home/$stdin_user/install.log
-LOG_REDIRECTION="/dev/null"
-#LOG_REDIRECTION=$logfile
 #Remove Logfile
 removelogfile=/home/$stdin_user/remove.log
+
+#Output Redirection /dev/null or logfile
+LOG_REDIRECTION="/dev/null"
+#LOG_REDIRECTION=$logfile
+
 #Script versionnumber
-script_versionumber=1.8
+script_versionumber=1.9
+#Fullmenu true,false
+fullmenu=false
+
 #Window dimensions
 height=20
 small_height=6
@@ -63,6 +69,7 @@ python_pip=python$python_version_major-pip
 #php
 #php_version="$(apt-cache policy php | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1)"
 php_version=$(apt-cache policy php | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1-3)
+
 #apache2
 apache2_version=$(apt-cache policy apache2 | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1)
 
@@ -76,7 +83,7 @@ let high=$((2 * low))
 system_low=1
 let system_high=$((low - 1))
 
-#rutorrents
+#ruTorrents
 #ALL_VERSION=$(wget -q https://api.github.com/repos/Novik/ruTorrent/releases -O - | grep tag_name | cut -d'"' -f4)
 ALL_VERSION=$(wget -q https://api.github.com/repos/Novik/ruTorrent/tags -O - | grep name | cut -d'"' -f4 | grep -v 'rutorrent\|plugins')
 #remove v4.0 "All Linux Distributions should mark version 4 as "unstable" due to caching issues and use the v4.0.1 hot fix release instead"
@@ -117,14 +124,15 @@ function MENU {
 	              "1" "Licence"
 	              "2" "Changelog"
 	              "I" "Scripted Installation"
-	              "R" "Update/Change ruTorrent"
+	              "T" "Update/Change ruTorrent"
 	              "V" "Change VHost"
 	              "S" "Enable/Renew SSL for VHost"
 	              "W" "Enable/Disable WebAuth"
 	              "A" "Add User to WebAuth"
 	              "U" "Remove User from WebAuth"
 	              "H" "Add/Remove Softlink to the rtorrent users homedir"
-	              "X" "Remove complete rtorrent & rutorrent installation")
+	              "X" "Remove complete rtorrent & ruTorrent installation"
+				  "R" "Move to unrar-nonfree version")
 	
 	if [ -f $logfile ]
 	then
@@ -152,7 +160,7 @@ function MENU {
 	--begin $x $y \
 	--colors \
 	--cancel-label "Exit" \
-	--menu "Options" $height $width 12 "${menu_options[@]}")
+	--menu "Options" $height $width 13 "${menu_options[@]}")
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -196,7 +204,7 @@ function MENU_OPTIONS () {
 	1)	LICENSE;;
 	2)	CHANGELOG;;
 	I)	SCRIPTED_INSTALL;;
-	R)	UPDATE_RUTORRENT;;
+	T)	UPDATE_RUTORRENT;;
 	V)	CHANGE_VHOST;;
 	S)	SSL_FOR_WEBSERVER;;
 	W)	WEBAUTH_TOGGLE;;
@@ -204,6 +212,7 @@ function MENU_OPTIONS () {
 	U)	REMOVE_WEBAUTH_USER;;
 	H)	SOFTLINK_TO_HOMEDIR;;
 	X)	REMOVE_EVERYTHING;;
+	R)	USE_UNRAR_NONFREE;;
 	L)	INSTALLLOG;;
 	9)	ADD_USER;;
 	6)	REMOVE_USER;;
@@ -2121,7 +2130,7 @@ function REMOVE_ALL () {
 	then
 		rm -f $removelogfile
 	fi
-	echo -e "XXX\n0\nRemove installation of rtorrent & rutorrent\nXXX"
+	echo -e "XXX\n0\nRemove installation of rtorrent & ruTorrent\nXXX"
 	
 	echo -e "XXX\n5\nStop systemd services\nXXX"
 	systemctl stop rtorrent.service 1>> $removelogfile
@@ -2137,7 +2146,7 @@ function REMOVE_ALL () {
 		echo -e "XXX\n10\nRemove softlink\nXXX"
 		if ( find /home -type l | grep -cq rtorrent )
 		then
-			unlink $(find /home -type l | grep rtorrent) 2>> $removelogfile
+			unlink $(find /home -type l | grep rtorrent) >> $removelogfile 2>&1
 		fi
 	fi
 	
@@ -2149,9 +2158,25 @@ function REMOVE_ALL () {
 	apt-get purge -y rtorrent >> $removelogfile 2>&1
 	
 	echo -e "XXX\n60\nRemove ruTorrent plugins\nXXX"
-	apt-get purge -y ffmpeg libzen0v5 libmediainfo0v5 mediainfo unrar-free sox libsox-fmt-mp3 >> $removelogfile 2>&1
-	#sudo python$python_version_major -m pip uninstall -y cloudscraper --quiet 1>> $removelogfile 2>&1
+	#remove deb non-free list if exist
+	if [ -f /etc/apt/sources.list.d/non_free.list ]
+	then
+		rm -f /etc/apt/sources.list.d/non_free.list >> $removelogfile 2>&1
+		apt-get update >> $removelogfile 2>&1
+	fi
 	
+	#grep the installed unrar variant (unrar or unrar-free)
+	unrar_variant=$(dpkg -l | grep ^ii | awk '{print $2}' | grep "unrar")
+	
+	#apt-get purge -y ffmpeg libzen0v5 libmediainfo0v5 mediainfo unrar-free sox libsox-fmt-mp3 >> $removelogfile 2>&1
+	apt-get purge -y ffmpeg libzen0v5 libmediainfo0v5 mediainfo $unrar_variant sox libsox-fmt-mp3 >> $removelogfile 2>&1
+	
+	if [[ $distributor == "raspbian" ]]
+	then
+		dpkg -r unrar >> $removelogfile 2>&1
+	fi
+	
+	#sudo python$python_version_major -m pip uninstall -y cloudscraper --quiet 1>> $removelogfile 2>&1
 	if [[ -e /usr/lib/python$python_version_major.$python_version_minor/EXTERNALLY-MANAGED ]]
 	then
 		echo "EXTERNALLY-MANAGED Python" 1>> $removelogfile
@@ -2162,6 +2187,8 @@ function REMOVE_ALL () {
 	fi
 	
 	echo -e "XXX\n70\nClean system (apt autoremove)\nXXX"
+	apt-get clean -y >> $removelogfile 2>&1
+	apt-get autoclean -y >> $removelogfile 2>&1
 	apt-get autoremove -y >> $removelogfile 2>&1
 	
 	echo -e "XXX\n90\nRemove config files\nXXX"
@@ -2174,10 +2201,10 @@ function REMOVE_ALL () {
 		rm -R $rtorrent_basedir >> $removelogfile 2>&1
 	fi
 	
-	#remove instalation logfile if exist
+	#remove installation logfile if exist
 	if [ -f $logfile ]
 	then
-		rm -f $logfile
+		rm -f $logfile >> $removelogfile 2>&1
 	fi
 	
 	echo -e "XXX\n100\nRemoving complete\nXXX"
@@ -2187,7 +2214,7 @@ function REMOVE_ALL () {
 	sleep 2
 	tput cnorm
 	
-	#move remove logfile ownership to actual user
+	#move remove-logfile ownership to actual user
 	chown -R $stdin_user:$stdin_user $removelogfile
 	
 	if $1
@@ -2240,6 +2267,147 @@ function SHOW_REMOVELOG {
 	0|1|255)	;;
 	3)			rm -f $removelogfile;;
 	esac
+}
+
+#so far I can estimate only Debian and Raspbian has the non-free repository not included
+#so only they needed the additional non-free repository to switch from unrar-free to unrar-nonfree
+#
+#unrar testet on actuall versions
+# Debian missing (included in non-free)
+# Ubuntu included (multiverse)
+# Raspbian OS included (non-free)
+# Raspbian missing (has to be build from source)
+# Lmde includet (non-free)
+# Ubuntu Mint included (multiverse)
+function USE_UNRAR_NONFREE {
+	dialog --title "Use unrar nonfree version" --stdout --begin $x $y --colors --yesno "\
+Use unrar non-free instead of unrar free\n\
+\n\
+Advanced features of version 3.0 archives are not supported\n\
+with unrar-free. If you have problems with unpacking\n\
+rar-archieves from the ruTorrent GUI switch to unrar-nonfree\n\
+version.\n\
+\n\
+unrar-nonfree conflicts unrar-free so the free version will\n\
+be remove first."\
+	$height $width
+	EXITCODE=$?
+	#echo $EXITCODE
+	# Get exit status
+	# 0 means user hit OK button.
+	# 1 means user hit CANCEL button.
+	# 2 means user hit HELP button.
+	# 3 means user hit EXTRA button.
+	# 255 means user hit [Esc] key.
+	case $EXITCODE in
+	0)		INSTALL_UNRAR_NONFREE;;
+	1|255)	;;
+	esac
+	MENU
+}
+
+function INSTALL_UNRAR_NONFREE {
+	if ( apt-cache -q0 show unrar* 2>&1 | grep -cq "Package: unrar$" )
+	then
+		#echo "nonfree"
+		FROM_UNRAR_FREE_TO_NONFREE
+	else
+		#echo "no nonfree"
+		case $distributor in
+		raspbian)
+			dialog --title "Use unrar nonfree version" --stdout --begin $x $y --colors --yesno "\
+\Z4$distributor\Zn supports unrar packages via build from source\n\
+\n\
+The source repository will be added to the sources in the\n\
+progress. Choose < \Z1N\Zno  > if you don't want this."\
+			$height $width
+			EXITCODE=$?
+			#echo $EXITCODE
+			# Get exit status
+			# 0 means user hit OK button.
+			# 1 means user hit CANCEL button.
+			# 2 means user hit HELP button.
+			# 3 means user hit EXTRA button.
+			# 255 means user hit [Esc] key.
+			case $EXITCODE in
+			0)		BUILD_UNRAR;;
+			1|255)	;;
+			esac
+			;;
+		*)
+			dialog --title "Use unrar nonfree version" --stdout --begin $x $y --colors --yesno "\
+\Z4$distributor\Zn supports nonfree packages via an additonal repository.\n\
+\n\
+The non-free repository will be added to the sources in the\n\
+progress. Choose < \Z1N\Zno  > if you don't want this."\
+			$height $width
+			EXITCODE=$?
+			#echo $EXITCODE
+			# Get exit status
+			# 0 means user hit OK button.
+			# 1 means user hit CANCEL button.
+			# 2 means user hit HELP button.
+			# 3 means user hit EXTRA button.
+			# 255 means user hit [Esc] key.
+			case $EXITCODE in
+			0)		ADD_REPOSITORY
+					FROM_UNRAR_FREE_TO_NONFREE;;
+			1|255)	;;
+			esac
+			;;
+		esac
+	fi
+}
+
+function BUILD_UNRAR {
+	dialog --begin $small_x $y --infobox "\nPlease wait while removing unrar-free and updating repository" $small_height $width
+	
+	#https://forums.raspberrypi.com/viewtopic.php?t=233405
+	#https://raspberrypi.stackexchange.com/questions/103544/how-to-extract-mutipart-rar-files
+	apt-get purge -y unrar-free >> $LOG_REDIRECTION 2>&1
+	apt-get autoremove -y >> $LOG_REDIRECTION 2>&1
+	
+	sed -i '/deb-src/ s/^#//g' /etc/apt/sources.list
+	cd $(mktemp -d)
+	apt-get update 1>> $LOG_REDIRECTION
+	apt-get build-dep -y unrar-nonfree >> $LOG_REDIRECTION 2>&1
+	
+	{
+	apt-get source -b unrar-nonfree 2>&1
+	dpkg -i unrar*.deb
+	} | dialog --stdout --begin $x $y --progressbox $height $width
+	
+	tput civis
+	sleep 3
+	tput cnorm
+}
+
+function ADD_REPOSITORY {
+	#https://linuxhint.com/debian_sources-list/
+	#https://stackoverflow.com/questions/16956810/how-can-i-find-all-files-containing-specific-text-string-on-linux
+	
+	case $distributor in
+	debian)
+		case $codename in
+		bookworm)	source="$(grep -rnw "^deb" /etc/apt/ | grep "main" -m 1 | cut -d':' -f3- | cut -d' ' -f1-3) non-free non-free-firmware";;
+		*)			source="$(grep -rnw "^deb" /etc/apt/ | grep "main" -m 1 | cut -d':' -f3- | cut -d' ' -f1-3) non-free";;
+		esac
+		;;
+	*)
+		;;
+	esac
+	
+	cat > "/etc/apt/sources.list.d/non_free.list" <<-EOF
+$source
+EOF
+	
+	apt-get update 1>> $LOG_REDIRECTION
+}
+
+function FROM_UNRAR_FREE_TO_NONFREE {
+	apt-get purge -y unrar-free >> $LOG_REDIRECTION 2>&1
+	apt-get autoremove -y >> $LOG_REDIRECTION 2>&1
+	apt-get install -y unrar >> $LOG_REDIRECTION 2>&1
 }
 
 # https://github.com/pi-hole/pi-hole/blob/master/pihole
