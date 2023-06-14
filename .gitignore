@@ -1,5 +1,6 @@
 *
 !*.png
+!*.PNG
 !.gitignore
 !changelog
 !README.md

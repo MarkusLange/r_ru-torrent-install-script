@@ -10,12 +10,12 @@ logfile=/home/$stdin_user/install.log
 #Remove Logfile
 removelogfile=/home/$stdin_user/remove.log
 
-#Output Redirection /dev/null or logfile
+#Output redirection /dev/null or logfile
 LOG_REDIRECTION="/dev/null"
 #LOG_REDIRECTION=$logfile
 
 #Script versionnumber
-script_versionumber=1.9
+script_versionumber=2.0
 #Fullmenu true,false
 fullmenu=false
 
@@ -139,6 +139,11 @@ function MENU {
 		menu_options+=("L" "Show Installation log")
 	fi
 	
+	if [ -f $removelogfile ]
+	then
+		menu_options+=("M" "Show Remove log")
+	fi
+	
 	if $fullmenu
 	then
 		menu_options+=("9" "Add User"
@@ -183,7 +188,7 @@ function EXIT {
 }
 
 function INSTALLLOG {
-	dialog --title "Installation log" --stdout --begin $x $y --ok-label "Exit" --extra-button --extra-label "Remove Log" --no-collapse --textbox $logfile $height $width
+	dialog --title "Installation log" --stdout --begin $x $y --ok-label "Exit" --extra-button --extra-label "Remove \"Installation Log\"" --no-collapse --textbox $logfile $height $width
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -194,6 +199,22 @@ function INSTALLLOG {
 	case $EXITCODE in
 	0|1|255)	;;
 	3)			rm -f $logfile;;
+	esac
+	MENU
+}
+
+function REMOVELOG {
+	dialog --title "Remove log" --stdout --begin $x $y --ok-label "Exit" --extra-button --extra-label "Remove \"Remove Log\"" --no-collapse --textbox $removelogfile $height $width
+	EXITCODE=$?
+	# Get exit status
+	# 0 means user hit OK button.
+	# 1 means user hit CANCEL button.
+	# 2 means user hit HELP button.
+	# 3 means user hit EXTRA button.
+	# 255 means user hit [Esc] key.
+	case $EXITCODE in
+	0|1|255)	;;
+	3)			rm -f $removelogfile;;
 	esac
 	MENU
 }
@@ -214,6 +235,7 @@ function MENU_OPTIONS () {
 	X)	REMOVE_EVERYTHING;;
 	R)	USE_UNRAR_NONFREE;;
 	L)	INSTALLLOG;;
+	M)	REMOVELOG;;
 	9)	ADD_USER;;
 	6)	REMOVE_USER;;
 	4)	ALLOW_SSH;;
@@ -309,7 +331,7 @@ function CHANGELOG {
 	
 	if [[ "$script_versionumber" < "$actuall_v" ]]
 	then
-		backgroundtext="(actual version is V$actuall_v)"		
+		backgroundtext="(actual version is V$actuall_v)"
 	else
 		backgroundtext=""
 	fi
@@ -968,7 +990,12 @@ function SELF_SIGNED () {
 	if [[ $(a2query -s | cut -d' ' -f1 | grep -v https_redirect | grep -c -i "SS-SSL") -ne 0 ]]
 	then
 		DNS=$(openssl x509 -text -noout -in /etc/ssl/certs/rutorrent-selfsigned.crt | grep "DNS" | cut -d':' -f2 | cut -d',' -f1)
-		dialog --title "Self Signed certification" --stdout --begin $small_x $y --ok-label "Abort" --no-cancel --extra-button --extra-label "Renew cert" --yesno "Activ VHost used allready SSL, aborted" $small_height $width
+		dialog \
+		--title "Self Signed certification" \
+		--stdout \
+		--begin $small_x $y \
+		--ok-label "Abort" --extra-button --extra-label "Renew cert" \
+		--msgbox "Activ VHost used allready SSL, aborted" $small_height $width
 		EXITCODE=$?
 		# Get exit status
 		# 0 means user hit OK button.
@@ -992,7 +1019,12 @@ function SELF_SIGNED () {
 function LE_SIGNED () {
 	if [[ $(a2query -s | cut -d' ' -f1 | grep -v https_redirect | grep -c -i "LE-SSL") -ne 0 ]]
 	then
-		dialog --title "Let's Encrypt certification" --stdout --begin $small_x $y --ok-label "Abort" --no-cancel --extra-button --extra-label "Renew cert" --yesno "Activ VHost used allready SSL, aborted" $small_height $width
+		dialog \
+		--title "Let's Encrypt certification" \
+		--stdout \
+		--begin $small_x $y \
+		--ok-label "Abort" --extra-button --extra-label "Renew cert" \
+		--msgbox "Activ VHost used allready SSL, aborted" $small_height $width
 		EXITCODE=$?
 		# Get exit status
 		# 0 means user hit OK button.
@@ -1056,18 +1088,26 @@ EOF
 
 function HTTPS_CONF () {
 	CURRENT_CONF=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect)
+	if (echo "$CURRENT_CONF" | grep -q -i "SSL")
+	then
+		TARGET=${CURRENT_CONF:0:(${#CURRENT_CONF}-7)}
+		SET_NEW_VHOST $CURRENT_CONF $TARGET
+	else
+		TARGET=$CURRENT_CONF
+	fi
+	
 	# recover Overridestatus for SSL Page
-	status=$(grep "AllowOverride" /etc/apache2/sites-available/$CURRENT_CONF.conf | rev | cut -d' ' -f1 | rev)
+	status=$(grep "AllowOverride" /etc/apache2/sites-available/$TARGET.conf | rev | cut -d' ' -f1 | rev)
 	
 	a2enmod ssl 1> /dev/null
 	a2enmod headers 1> /dev/null
 	
-	cat > /etc/apache2/sites-available/$CURRENT_CONF-ss-ssl.conf << EOF
+	cat > /etc/apache2/sites-available/$TARGET-ss-ssl.conf << EOF
 <IfModule mod_ssl.c>
 <VirtualHost *:443>
 	ServerAdmin webmaster@localhost
-	DocumentRoot /var/www/$CURRENT_CONF
-	<Directory "/var/www/$CURRENT_CONF">
+	DocumentRoot /var/www/$TARGET
+	<Directory "/var/www/$TARGET">
 		AllowOverride $status
 	</Directory>
 
@@ -1089,8 +1129,8 @@ function HTTPS_CONF () {
 </IfModule>
 EOF
 	
-	a2dissite $CURRENT_CONF.conf 1> /dev/null
-	a2ensite $CURRENT_CONF-ss-ssl.conf 1> /dev/null
+	a2dissite $TARGET.conf 1> /dev/null
+	a2ensite $TARGET-ss-ssl.conf 1> /dev/null
 	systemctl reload apache2.service 1> /dev/null
 	systemctl restart apache2.service 1> /dev/null
 }
@@ -1134,6 +1174,15 @@ EOF
 
 function LET_ENCRYPT_FOR_SSL () {
 	CURRENT_CONF=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect)
+	
+	if (echo "$CURRENT_CONF" | grep -q -i "SSL")
+	then
+		TARGET=${CURRENT_CONF:0:(${#CURRENT_CONF}-7)}
+		SET_NEW_VHOST $CURRENT_CONF $TARGET
+	else
+		TARGET=$CURRENT_CONF
+	fi
+	
 	DOMAIN_NAME=$1
 	
 	a2enmod ssl 1> /dev/null
@@ -1141,14 +1190,17 @@ function LET_ENCRYPT_FOR_SSL () {
 	
 	apt-get install -y python3-certbot-apache 1> /dev/null
 	
-	certbot --apache --rsa-key-size 4096 --must-staple --hsts --uir --staple-ocsp --strict-permissions --register-unsafely-without-email --agree-tos --no-redirect -d "$DOMAIN_NAME" 2>&1 | dialog --stdout --begin $x $y --progressbox $height $width
-	sed -i 's/31536000/63072000/g' /etc/apache2/sites-available/$CURRENT_CONF-le-ssl.conf
+	tput cup $(tput lines) 0
+	echo ""
+	
+	certbot --apache --rsa-key-size 4096 --must-staple --hsts --uir --staple-ocsp --strict-permissions --register-unsafely-without-email --agree-tos --no-redirect -d "$DOMAIN_NAME" #2>&1 | dialog --stdout --begin $x $y --progressbox $height $width
+	sed -i 's/31536000/63072000/g' /etc/apache2/sites-available/$TARGET-le-ssl.conf
 	
 	tput civis
 	sleep 3
 	tput cnorm
 	
-	a2dissite $CURRENT_CONF.conf 1> /dev/null
+	a2dissite $TARGET.conf 1> /dev/null
 	systemctl reload apache2.service 1> /dev/null
 	systemctl restart apache2.service 1> /dev/null
 }
@@ -1336,7 +1388,7 @@ EOF
 
 function CHANGE_VHOST () {
 	CURRENT_CONF=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect)
-	ALL_VHOST=$(ls /etc/apache2/sites-available/ | grep -v 'https_redirect\|000-default\|default-ssl' | sort -r | sed 's/.conf/""off"/g' | sed '/'"$CURRENT_CONF"'/ s/off/on/')
+	ALL_VHOST=$(ls /etc/apache2/sites-available/ | grep -v 'https_redirect\|000-default\|default-ssl' | sed 's/.conf/""off"/g' | sed '/'"$CURRENT_CONF"'/ s/off/on/')
 	ALL_VHOST_NO_SPACE=$(echo $ALL_VHOST | sed 's/ //g')
 	IFS='"' read -a VHOSTS <<< "$ALL_VHOST_NO_SPACE"
 	
@@ -1454,7 +1506,7 @@ function CREATE_WEBAUTH_USER () {
 	arr=("$@")
 	
 	CURRENT_CONF=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect)
-	if echo "$CURRENT_CONF" | grep -q -i "SSL"
+	if (echo "$CURRENT_CONF" | grep -q -i "SSL")
 	then
 		TARGET=${CURRENT_CONF:0:(${#CURRENT_CONF}-7)}
 	else
@@ -1548,7 +1600,7 @@ EOF
 
 function REMOVE_WEBAUTH_USER {
 	CURRENT_CONF=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect)
-	if echo "$CURRENT_CONF" | grep -q -i "SSL"
+	if (echo "$CURRENT_CONF" | grep -q -i "SSL")
 	then
 		TARGET=${CURRENT_CONF:0:(${#CURRENT_CONF}-7)}
 	else
@@ -1579,7 +1631,7 @@ function REMOVE_WEBAUTH_USER {
 
 function REMOVE_USER_FROM_WEBAUTH_AUTH () {
 	CURRENT_CONF=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect)
-	if echo "$CURRENT_CONF" | grep -q -i "SSL"
+	if (echo "$CURRENT_CONF" | grep -q -i "SSL")
 	then
 		TARGET=${CURRENT_CONF:0:(${#CURRENT_CONF}-7)}
 	else
@@ -2120,9 +2172,9 @@ function REMOVE_ALL () {
 	dialog --begin $small_x $y --infobox "\nPlease wait while fetching data" $small_height $width
 	
 	activ_rutorrent=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect | cut -d'-' -f2)
-	rtorrent_rc_path=$(find / -name .rtorrent.rc)
-	rpc_socket_path=$(find / -name rpc.socket | rev | cut -d'/' -f2- | rev)
-	rtorrent_basedir=$(find / -name rtorrent-*.log | rev | cut -d'/' -f3- | rev | head -n 1)
+	rtorrent_rc_path=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name .rtorrent.rc)
+	rpc_socket_path=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name rpc.socket | rev | cut -d'/' -f2- | rev)
+	rtorrent_basedir=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name rtorrent-*.log | rev | cut -d'/' -f3- | rev | head -n 1)
 	softlink_link=$(find /home -type l | grep rtorrent)
 	
 	{
@@ -2171,10 +2223,10 @@ function REMOVE_ALL () {
 	#apt-get purge -y ffmpeg libzen0v5 libmediainfo0v5 mediainfo unrar-free sox libsox-fmt-mp3 >> $removelogfile 2>&1
 	apt-get purge -y ffmpeg libzen0v5 libmediainfo0v5 mediainfo $unrar_variant sox libsox-fmt-mp3 >> $removelogfile 2>&1
 	
-	if [[ $distributor == "raspbian" ]]
-	then
-		dpkg -r unrar >> $removelogfile 2>&1
-	fi
+	#if [[ $distributor == "raspbian" ]]
+	#then
+	#	dpkg -r unrar >> $removelogfile 2>&1
+	#fi
 	
 	#sudo python$python_version_major -m pip uninstall -y cloudscraper --quiet 1>> $removelogfile 2>&1
 	if [[ -e /usr/lib/python$python_version_major.$python_version_minor/EXTERNALLY-MANAGED ]]
@@ -2272,13 +2324,13 @@ function SHOW_REMOVELOG {
 #so far I can estimate only Debian and Raspbian has the non-free repository not included
 #so only they needed the additional non-free repository to switch from unrar-free to unrar-nonfree
 #
-#unrar testet on actuall versions
-# Debian missing (included in non-free)
-# Ubuntu included (multiverse)
-# Raspbian OS included (non-free)
-# Raspbian missing (has to be build from source)
-# Lmde includet (non-free)
-# Ubuntu Mint included (multiverse)
+#unrar testet on actuall distributons
+# Debian           missing  (included in non-free)
+# Ubuntu           included (multiverse)
+# Raspberry Pi OS  included (non-free)
+# Raspbian         missing  (has to be build from apt source)
+# Lmde             included (non-free)
+# Ubuntu Mint      included (multiverse)
 function USE_UNRAR_NONFREE {
 	dialog --title "Use unrar nonfree version" --stdout --begin $x $y --colors --yesno "\
 Use unrar non-free instead of unrar free\n\

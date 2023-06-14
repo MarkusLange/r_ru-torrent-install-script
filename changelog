@@ -1,3 +1,19 @@
+Version 2.0
+* Fix some comments inside the script
+* Exclude folder from find inside Remove function for more
+  silences
+* Add option to show the "Remove Log" from the menu after
+  removing the installation
+* Fix some dialog boxes from "Enable/Renew SSL for VHost"
+* Hardening "Enable/Renew SSL for VHost" function to prevent
+  cross encryption between Self Signed and Let's Encrypted URLs
+* Exclude Let's Encrypt certificate generation from dialog boxes
+  so if: "You have an existing certificate that has exactly the
+  same domains or certificat name you requested and isn't close
+  to expiry." Let's Encrypt needs input
+* Undo "Change sort order in Change VHost" cause a bug
+-----------------------------------------------------------------
+
 Version 1.9
 * Add option to switch from unrar-free to unrar-nonfree, add
   repository if needed. Advanced features of version 3.0 archives
