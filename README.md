@@ -1,7 +1,7 @@
 # rru-torrent-install-script
 A menu based [rtorrent](https://github.com/rakshasa/rtorrent) &amp; [ruTorrent](https://github.com/Novik/ruTorrent) installation script
 
-![Logo](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/menu_with_log.PNG)
+![Logo](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/menu.PNG)
 
 grep the script file:
 `wget https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-script.bash`
@@ -21,15 +21,27 @@ This script does not work with the scripts above for upgrades or updates!
 
 Scripted Installation
 
-![Scriptet](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/scripted%20installation.PNG)
+![Scriptet](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/I_Scripted%20Installation.PNG)
 
-Installation Summary
+Configure your Server, select your favorit ruTorrent version and other things
 
-![Scriptet Summery](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/scripted%20installation_summary.PNG)
+![ruTorrent](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ic_Scripted%20Installation_choose_ruTorrent_version.PNG)
+
+Take a look in the Installation Summary, and install everthing if it fits or arbort it, without making any system changes at all
+
+![Scriptet Summery](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Id_Scripted%20Installation_summary.PNG)
 
 Installation Completed
 
-![Scriptet Complete](https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/c5abf450fd4df653e6f1ea077e88996dc80b5472/screenshots/scripted%20installation_complete.PNG)
+![Scriptet Complete](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ie_Scripted%20Installation_complete.PNG)
+
+Secure your communication with a SSL Certificate
+
+![SSL](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/S_Enable%20Renew%20SSL%20for%20VHost.PNG)
+
+Or add WebAuthentification if you want to your VHost
+
+![Webauthentification](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/W_Enable%20Disable%20WebAuth.PNG)
 
 ## Features ##
 - GUI
