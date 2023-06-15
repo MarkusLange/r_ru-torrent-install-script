@@ -24,10 +24,14 @@ Scripted Installation
 ![Scriptet](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/I_Scripted%20Installation.PNG)
 
 Configure your Server, select your favorit ruTorrent version and other things
+Select our rtorrent user oder add a new one
+![Select User](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ia_Scripted%20Installation_select_user.PNG)
+
+![rotrrent.rc](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ib_Scripted%20Installation_edit_rtorrent.PNG)
 
 ![ruTorrent](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ic_Scripted%20Installation_choose_ruTorrent_version.PNG)
 
-Take a look in the Installation Summary, and install everthing if it fits or arbort it, without making any system changes at all
+Rewiev the Installation Summary, and install everthing if it fits, or arbort it, without making any system changes at all
 
 ![Scriptet Summery](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Id_Scripted%20Installation_summary.PNG)
 
@@ -42,6 +46,15 @@ Secure your communication with a SSL Certificate
 Or add WebAuthentification if you want to your VHost
 
 ![Webauthentification](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/W_Enable%20Disable%20WebAuth.PNG)
+
+Add a user to the WebAuthentification or remove one 
+
+![Addwebuser](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/A_Add%20User%20to%20WebAuth.PNG)
+![Removewebuser](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/U_Remove%20User%20from%20WebAuth.PNG)
+
+Or remove the installation if it doesn't fit your needs
+![Removeall](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/X_Remove%20complete%20rtorrent%20and%20rutorrent%20installation.PNG)
+(ruTorrent can be updated without reinstallation!)
 
 ## Features ##
 - GUI
