@@ -25,13 +25,14 @@ Scripted Installation
 
 Configure your Server, select your favorit ruTorrent version and other things
 Select our rtorrent user oder add a new one
+
 ![Select User](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ia_Scripted%20Installation_select_user.PNG)
 
 ![rotrrent.rc](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ib_Scripted%20Installation_edit_rtorrent.PNG)
 
 ![ruTorrent](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ic_Scripted%20Installation_choose_ruTorrent_version.PNG)
 
-Rewiev the Installation Summary, and install everthing if it fits, or arbort it, without making any system changes at all
+Review the Installation Summary, and install everthing if it fits, or arbort it, without making any system changes at all
 
 ![Scriptet Summery](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Id_Scripted%20Installation_summary.PNG)
 
