@@ -24,7 +24,8 @@ Scripted Installation
 ![Scriptet](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/I_Scripted%20Installation.PNG)
 
 Configure your Server, select your favorit ruTorrent version and other things
-Select our rtorrent user oder add a new one
+
+Select our rtorrent user or add a new one
 
 ![Select User](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ia_Scripted%20Installation_select_user.PNG)
 
