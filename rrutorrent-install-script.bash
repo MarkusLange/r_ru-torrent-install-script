@@ -15,7 +15,7 @@ LOG_REDIRECTION="/dev/null"
 #LOG_REDIRECTION=$logfile
 
 #Script versionnumber
-script_versionumber=2.0
+script_versionumber=2.1
 #Fullmenu true,false
 fullmenu=false
 
@@ -250,7 +250,7 @@ function MENU_OPTIONS () {
 }
 
 function HEADER {
-	systemupdate=$(stat  /var/cache/apt/ | head -6 | tail -1 | cut -d' ' -f2- | cut -d'.' -f1)
+	systemupdate=$(stat /var/cache/apt/ | head -6 | tail -1 | cut -d' ' -f2- | cut -d'.' -f1)
 	dialog \
 	--backtitle "last systemupdate on $systemupdate" \
 	--title "System Information" \
@@ -897,11 +897,12 @@ Random Listening Port let rtorrent set the Port randomly\n
 rtorrent folder stucture:\n
 	\Z4$NEW_DLFOLDER\Zn \n
 	 └── /rtorrent \n
-	     ├── /.session \n
-	     ├── /download \n
-	     ├── /log \n
-	     └── /watch \n
-	"\
+	      ├── /.session \n
+	      ├── /download \n
+	      ├── /log \n
+	      └── /watch \n
+	           ├── /load \n
+	           └── /start"\
 	$height $width 0 \
 	"Port Range                    :" 1 1  " $NEW_PORT_RANGE_MIN" 1 33  6 0 0 \
 	"-"                               1 39 " $NEW_PORT_RANGE_MAX" 1 40  6 0 0 \
@@ -1300,7 +1301,7 @@ function INSTALL_RUTORRENT () {
 		#move ruTorrent errorlog to a folder writeable by www-data
 		sed -i 's#/tmp/errors.log#/var/log/apache2/rutorrent-errors.log#' /var/www/$SELECTED_CUT/conf/config.php
 		
-		#use localHostedMode if available (rutorrent 4.01 and above)
+		#use localHostedMode if available (rutorrent 4.0.1+)
 		if (grep -cq "localHostedMode" /var/www/$SELECTED_CUT/conf/config.php)
 		then
 			sed -i '/localHostedMode/ s/false/true/' /var/www/$SELECTED_CUT/conf/config.php
@@ -1310,10 +1311,14 @@ function INSTALL_RUTORRENT () {
 		chmod -R 775 /var/www/$SELECTED_CUT
 		#cd ~
 		
-		# dependencies for ruTorrent addons
+		#dependencies for ruTorrent addons
 		#                                                                        spectrogram Plugin
 		apt-get -y install ffmpeg libzen0v5 libmediainfo0v5 mediainfo unrar-free sox libsox-fmt-mp3 2>/dev/null 1>> $LOG_REDIRECTION
 		# php-geoip virtuelles Paket, bereitgestellt durch libapache2-mod-php7.3
+		
+		#httprpc vs rpc, only one is nessesary choose the better: https://github.com/Novik/ruTorrent/discussions/2439
+		sed -i '$a[rpc]' /var/www/$SELECTED_CUT/conf/plugins.ini
+		sed -i '$aenabled = no' /var/www/$SELECTED_CUT/conf/plugins.ini
 		
 		if [[ $codename == "stretch" || $debian_version == "stretch" ]]
 		then
@@ -1670,8 +1675,9 @@ function SOFTLINK_TO_HOMEDIR {
 	--stdout \
 	--begin $x $y \
 	--no-tags \
+	--colors \
 	--default-item "$preselect" \
-	--radiolist "Softlink to home of rtorrent user $rtorrentuser status (*)" $height $width 2 "${SOFTLINK[@]}")
+	--radiolist "Softlink to home of rtorrent user \Z4$rtorrentuser\Zn status (*)" $height $width 2 "${SOFTLINK[@]}")
 	EXITCODE=$?
 	#echo "$SELECTED"
 	# Get exit status
@@ -1893,12 +1899,12 @@ Random Listening Port let rtorrent set the Port randomly\n
 rtorrent folder stucture:\n
 	\Z4$DLFOLDER\Zn \n
 	 └── /rtorrent \n
-	     ├── /.session \n
-	     ├── /download \n
-	     ├── /log \n
-	     └── /watch \n
-	\n
-	"\
+	      ├── /.session \n
+	      ├── /download \n
+	      ├── /log \n
+	      └── /watch \n
+	           ├── /load \n
+	           └── /start"\
 	$height $width 0 \
 	"Port Range                    :" 1 1  " $PORT_RANGE_MIN" 1 33  6 0 0 \
 	"-"                               1 39 " $PORT_RANGE_MAX" 1 40  6 0 0 \
@@ -2139,7 +2145,7 @@ Everything that was installed with this script will be removed.\n\
 \n\
 If you start this all from the script installed packages will\n\
 be removed, all packages from apache2, php, rtorrent and\n\
-rutorrent.\n\
+ruTorrent.\n\
 \n\
 All downloaded files will be deleted too, also all config files\n\
 and everything under the apache2 document root /var/www.\n\

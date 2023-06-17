@@ -1,7 +1,14 @@
+Version 2.1
+* Minor text fixes
+* Add folders /load and /start in the rtorrent.rc dialog window
+* For XMLRPC choose HTTPrpc instead of rpc and deactivate rpc on
+  this decision both are activ to this point of time
+-----------------------------------------------------------------
+
 Version 2.0
 * Fix some comments inside the script
 * Exclude folder from find inside Remove function for more
-  silences
+  silence
 * Add option to show the "Remove Log" from the menu after
   removing the installation
 * Fix some dialog boxes from "Enable/Renew SSL for VHost"
