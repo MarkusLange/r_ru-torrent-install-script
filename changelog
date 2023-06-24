@@ -1,3 +1,17 @@
+Version 2.2 (modified user management, true daemon-mode)
+* Minor text fixes
+* Shifting some variables around
+* Cleaned some functions
+* Move rtorrent to a exclusiv system user to run with and
+  create a group for all rtorrent needed users in favor of this
+  benefit set higher folder und file restrictions now the given
+  user only gets a softlink and rights with adding to the group
+  to access the rtorrent folders
+* Move rtorrent.rc to the rtorrent basedir
+* Modified rtorrent.service for relocated .rtorrent.rc
+* Re-arranged Installation Summery
+-----------------------------------------------------------------
+
 Version 2.1
 * Minor text fixes
 * Add folders /load and /start in the rtorrent.rc dialog window

@@ -4,13 +4,13 @@ A menu based [rtorrent](https://github.com/rakshasa/rtorrent) &amp; [ruTorrent](
 ![Logo](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/menu.PNG)
 
 grep the script file:
-`wget https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-script.bash`
+`wget https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-deamon-script.bash`
 
 make it executable:
-`chmod +x rrutorrent-install-script.bash`
+`chmod +x rrutorrent-install-deamon-script.bash`
 
 start the GUI with:
-`sudo ./rrutorrent-install-script.bash`
+`sudo ./rrutorrent-install-deamon-script.bash`
 
 This script is the first of it's kind a GUI based (dialog) installation script for rtorrent and rutorrent, it is loosely based on the work of:
 - https://github.com/Kerwood/Rtorrent-Auto-Install
@@ -18,6 +18,9 @@ This script is the first of it's kind a GUI based (dialog) installation script f
 - https://github.com/arakasi72/rtinst
 
 This script does not work with the scripts above for upgrades or updates!
+
+Now updated since Version 2.2 with a true deamon-mode for rtorrent with a seperate system-user and group for rtorrent, shared with apache2 and the
+rtorrent user now privileged with folder access rights via group access.
 
 Scripted Installation
 
@@ -96,7 +99,8 @@ Or remove the installation if it doesn't fit your needs
   - uses deamon.mode for rtorrent if possible (0.9.7+)
   - remove session_lock from rtorrent session so a restart works without complications 
   - move open_local socket to `/run` and rtorrent basedir to `/srv` (https://ubuntu.com/blog/private-home-directories-for-ubuntu-21-04)
-  - add softlink to homedir of the rtorrrent user from the rtorrent basedir
+  - add softlink to homedir of the ~~rtorrrent user~~ from the rtorrent basedir
+  - exclusiv system user and group for rtorrent benefits higher folder permissions (Script Version 2.2)
   
 ## Misc ##
 - rtorrent
