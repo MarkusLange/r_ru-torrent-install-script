@@ -1,4 +1,4 @@
-# rru-torrent-install-script
+<# rru-torrent-install-script
 A menu based [rtorrent](https://github.com/rakshasa/rtorrent) &amp; [ruTorrent](https://github.com/Novik/ruTorrent) installation script
 
 ![Logo](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/menu.PNG)
@@ -20,7 +20,8 @@ This script is the first of it's kind a GUI based (dialog) installation script f
 This script does not work with the scripts above for upgrades or updates!
 
 Now updated since Version 2.2 with a true deamon-mode for rtorrent with a seperate system-user and group for rtorrent, shared with apache2 and the
-rtorrent user now privileged with folder access rights via group access.
+rtorrent user now privileged with folder access rights via group access. There is no way to do a feature update (true deamon-mode) from Version 2.1
+to Version 2.2, needed reinstallation, but ruTorrent updates with the new script works for installations pre Version 2.2 with the updated Version.
 
 Scripted Installation
 
