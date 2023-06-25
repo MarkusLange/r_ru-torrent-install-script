@@ -1940,29 +1940,37 @@ function SUM () {
 	else
 		if (grep "^DenyUsers" /etc/ssh/sshd_config | grep -cq "${USER[1]}")
 		then
-			Deny_line="SSH Login for rtorrent User        \Z4no\Z0"
+			ssh_login=no
 		else
-			Deny_line="SSH Login for rtorrent User        \Z4yes\Z0"
+			ssh_login=yes
 		fi
 	fi
 	
 	dialog --title "Scripted Installation" --stdout --begin $x $y --colors --yesno "\
 Configuration:\n\
 \n\
-rtorrent User                      \Z4${USER[1]}\Z0\n\
-$Deny_line\n\
+user:\n\
+rtorrent user                      \Z4${USER[1]}\Z0\n\
+SSH Login for rtorrent user        \Z4$ssh_login\Z0\n\
 \n\
+rtorrent daemon:\n\
+rtorrent system user               \Z4$rtorrent_daemon_user\Z0\n\
+rtorrent system group              \Z4$rtorrent_daemon_group\Z0\n\
+\n\
+rtorrent:\n\
 rtorrent version                   \Z4$rtorrent_version\Z0\n\
 rtorrent Basedir                   \Z4${RC[2]}\Z0\n\
 rtorrent.rc placed in              \Z4${RC[2]}/rtorrent\Z0\n\
 Portrange                          \Z4${RC[0]}\Z0\n\
 Random Listening port              \Z4${RC[1]}\Z0\n\
+\n\
+ruTorrent:\n\
 ruTorrent Version                  \Z4$RUTORRENT_VERSION\Z0\n\
 \n\
 This Script will install rtorrent and ruTorrent with this\n\
 configuration, rtorrent set all folders within this installation.\n\
 \n\
-The permissons of the rtorrent Basedir will granted to \Z4${USER[1]}\Z0\n\
+The permissons of the rtorrent Basedir will granted to user \Z4${USER[1]}\Z0\n\
 "\
 	$height $width
 	EXITCODE=$?
