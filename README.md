@@ -1,4 +1,4 @@
-<# rru-torrent-install-script
+# rru-torrent-install-script
 A menu based [rtorrent](https://github.com/rakshasa/rtorrent) &amp; [ruTorrent](https://github.com/Novik/ruTorrent) installation script
 
 ![Logo](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/menu.PNG)
