@@ -100,7 +100,7 @@ Or remove the installation if it doesn't fit your needs
   - uses deamon.mode for rtorrent if possible (0.9.7+)
   - remove session_lock from rtorrent session so a restart works without complications 
   - move open_local socket to `/run` and rtorrent basedir to `/srv` (https://ubuntu.com/blog/private-home-directories-for-ubuntu-21-04)
-  - add softlink to homedir of the ~~rtorrrent user~~ from the rtorrent basedir
+  - add softlink to homedir ~~of the rtorrrent user~~ from the rtorrent basedir
   - exclusiv system user and group for rtorrent benefits higher folder permissions (Script Version 2.2)
   
 ## Misc ##
