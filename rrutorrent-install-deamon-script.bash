@@ -2064,12 +2064,13 @@ function INSTALLATION () {
 	
 	#add rtorrent_daemon_group to www-data
 	sudo usermod -a -G $rtorrent_daemon_group www-data
+	sudo systemctl restart apache2.service
 	
 	echo -e "XXX\n100\nInstallation complete\nXXX"
 	} | dialog --begin $small_x $y --gauge "Please wait while installing" $small_height $width 0
 	
 	tput civis
-	sleep 2
+	sleep 3
 	tput cnorm
 	
 	#move installation logfile ownership to actual user
@@ -2246,7 +2247,7 @@ function REMOVE_ALL () {
 	} | dialog --begin $small_x $y --gauge "Please wait while removing" $small_height $width 0
 	
 	tput civis
-	sleep 2
+	sleep 3
 	tput cnorm
 	
 	#remove rtorrent user and group

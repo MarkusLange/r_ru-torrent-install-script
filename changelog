@@ -1,3 +1,11 @@
+Version 2.3
+* Bugfix apache2 needs restart when www-data is added to rtorrent
+  group, cause added groups need a refreshing, that only works
+  after an relogin of the user (also needed for the rtorrent user
+  if the user is the active on)
+* Synchronize sleep times (time to read messages) inside script
+-----------------------------------------------------------------
+
 Version 2.2 (modified user management, true daemon-mode)
 * Minor text fixes
 * Shifting some variables around
