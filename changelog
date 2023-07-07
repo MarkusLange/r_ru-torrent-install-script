@@ -1,10 +1,27 @@
+Version 2.4
+* Repair "SOFTLINK_TO_HOMEDIR" function
+* Fix "Installation Summery" function
+* Undo double use of varables
+* Rewrite "Edit rtorrent.rc" function to get back to overview
+  after change rtorrent basedir so if the user changes the
+  rtorrent basedir he did not hit the next step
+* Merge "Edit rtorrent.rc" into "Edit rtorrent.rc/Move rtorrent
+  basedir" allows to move rtorrent basedir as well
+* Fix and expand rtorrent.service for rtorrent-deamon based
+  installations
+* Add option to change the rtorrent user
+* Remove unused functions from script file
+* Move and rename some Menu options
+* Change changelog dimension
+----------------------------------------------------------------
+
 Version 2.3
-* Bugfix apache2 needs restart when www-data is added to rtorrent
-  group, cause added groups need a refreshing, that only works
-  after an relogin of the user (also needed for the rtorrent user
-  if the user is the active on)
+* Bugfix apache2 needs restart when www-data is added to
+  rtorrent group, cause added groups need a refreshing, that
+  only works after an relogin of the user (also needed for the
+  rtorrent user if the user is the active on)
 * Synchronize sleep times (time to read messages) inside script
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 2.2 (modified user management, true daemon-mode)
 * Minor text fixes
@@ -18,14 +35,14 @@ Version 2.2 (modified user management, true daemon-mode)
 * Move rtorrent.rc to the rtorrent basedir
 * Modified rtorrent.service for relocated .rtorrent.rc
 * Re-arranged Installation Summery
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 2.1
 * Minor text fixes
 * Add folders /load and /start in the rtorrent.rc dialog window
 * For XMLRPC choose HTTPrpc instead of rpc and deactivate rpc on
   this decision both are activ to this point of time
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 2.0
 * Fix some comments inside the script
@@ -41,18 +58,18 @@ Version 2.0
   same domains or certificat name you requested and isn't close
   to expiry." Let's Encrypt needs input
 * Undo "Change sort order in Change VHost" cause a bug
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 1.9
 * Add option to switch from unrar-free to unrar-nonfree, add
-  repository if needed. Advanced features of version 3.0 archives
-  are not supported with unrar-free. Not everyone wants non-free
-  software on his linux this is optional
+  repository if needed. Advanced features of version 3.0
+  archives are not supported with unrar-free. Not everyone wants
+  non-free software on his linux this is optional
 * Fix some dialog boxes
 * Add some information to README.md
 * Differentiation between Raspbian and Raspberry Pi OS
 * Struct some variables new in the script header
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 1.8
 * Minor text fixes
@@ -68,7 +85,7 @@ Version 1.8
 * Support $localhostmode in ruTorrent (4.0.1+)
 * Fix and expand rtorrent.service for tmux based installations
 * Add tmux explainations inside the script
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 1.7
 * Change sort order in Change VHost
@@ -76,7 +93,7 @@ Version 1.7
   release doesn't contain the last betas anymore
 * Change permissions from .rtorrent.rc from 755 to 644
 * Performance tweak on UPDATE_RUTORRENT function
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 1.6
 * Since Python PEP 668 – Marking Python base environments as
@@ -84,13 +101,13 @@ Version 1.6
   flag --break-system-packages for the cloudscraper installation
   if needed (Debian Bookworm for example, pip version 23.0.1)
 * Add more silence inside rutorrent installation
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 1.5
 * Expand Remove with an option to keep the downloads and torrent
   data
 * Minor fixes for better reinstallation
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 1.4
 * Fixing some folders about the ownership
@@ -98,7 +115,7 @@ Version 1.4
 * Remove unnecessary packages
 * Add option to remove everything
 * Add remove.log
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 1.3
 * Remove Serversignature from Unauthorized HTML redirect
@@ -111,25 +128,25 @@ Version 1.3
   https://ubuntu.com/blog/private-home-directories-for-ubuntu-21-04
 * Add option to add/remove softlink to rtorrent user homedir
 * Fix window height from "Change Basedir"
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 1.2
 * Add to Script Version on menu page
 * Cleaning the code, made dialog windows more equally
 * Add some missing response messages
 * Bugfix edit rtorrent.rc (fullmenu)
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 1.1
 * Bugfix "Change VHost" Apache2 needs a restart if certificats
   are changed or activated, Renew cert also
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 1.0
 * Since the maximum lifespan of SSL/TLS certificates has been
   limited to 398 days, added the option to renew the certificate
   on purpose, for Self Signed and Let's Encrypt
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 0.9 (first public release)
 * Create scripted installation
@@ -139,7 +156,7 @@ Version 0.9 (first public release)
 * Having rtorrent Basedir inside home rtorrent user is
   now optional
 * Add WebAuth to Menu
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 0.8
 * Add HTTPS support, with HTTP to HTTPS redirection, made
@@ -148,7 +165,7 @@ Version 0.8
   Self Signed A (if trust issues are ignored)
   Let's Encrypt A+
 * Rewrite almost everything
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 0.7
 * Move from tmux to daemon-mode if rtorrent version is greater
@@ -157,7 +174,7 @@ Version 0.7
 * Moved from whiptail to dialog for reasons of clarity inside
   the script and rewrite some stuff
 * Use --colors from dialog to adopt color scheme
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 0.6
 * Get ruTorrent Versions direct from github
@@ -165,29 +182,29 @@ Version 0.6
 * Move from scgi.open_port to open_local
   https://github.com/rakshasa/rtorrent/issues/696
   https://arstechnica.com/information-technology/2018/03/hackers-exploiting-rtorrent-to-install-unix-coin-miner-have-netted-4k-so-far/
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 0.5
 * Move changelog to github 
 * Use changelog direct from github
 * Grep user information direct from system
 * Move pre installation dependency from curl to wget
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 0.4
 * Establish changelog
 * Use latest rtorrent.rc direct from
   https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 0.3
 * Add System Information
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 0.2
 * Use the latest rtorrent.rc available 
 * Add THE BEER-WARE LICENSE (Revision 42)
------------------------------------------------------------------
+----------------------------------------------------------------
 
 Version 0.1
 * Commandline GUI based on whiptail

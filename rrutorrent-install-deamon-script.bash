@@ -19,7 +19,7 @@ rtorrent_daemon_user=rtorrent-deamon
 rtorrent_daemon_group=rtorrent-common
 
 #Script versionnumber
-script_versionumber=2.3
+script_versionumber="V2.4"
 #Fullmenu true,false
 fullmenu=false
 
@@ -134,9 +134,11 @@ function MENU {
 	              "W" "Enable/Disable WebAuth"
 	              "A" "Add User to WebAuth"
 	              "U" "Remove User from WebAuth"
-	              "H" "Add/Remove Softlink to the rtorrent users homedir"
-	              "X" "Remove complete rtorrent & ruTorrent installation"
-				  "R" "Move to unrar-nonfree version")
+	              "R" "Move to unrar-nonfree variant"
+	              "H" "Add/Remove Softlink to/from the rtorrent users homedir"
+	              "G" "Edit rtorrent.rc/Move rtorrent basedir"
+	              "C" "Change rtorrent user"
+	              "X" "Remove complete rtorrent & ruTorrent installation")
 	
 	if [ -f $logfile ]
 	then
@@ -154,16 +156,14 @@ function MENU {
 		               "6" "Remove User"
 		               "4" "Allow SSH"
 		               "5" "Deny SSH"
-		               "7" "Install webserver & php"
-		               "8" "Install rtorrent on User \Z4$stdin_user\Zn"
-		               "E" "Edit rtorrent.rc on User \Z4$stdin_user\Zn")
+		               "7" "Install webserver & php")
 	fi
 	
 	#	               "Z" "Install Complete"
-	#	               "N" "Script")
+	#	               "N" "Script"
 	
 	SELECTED=$(dialog \
-	--backtitle "rtorrent & ruTorrent Installation Script V$script_versionumber" \
+	--backtitle "rtorrent & ruTorrent Installation Script $script_versionumber" \
 	--title "Menu" \
 	--stdout \
 	--begin $x $y \
@@ -180,6 +180,35 @@ function MENU {
 	case $EXITCODE in
 	0)		MENU_OPTIONS $SELECTED;;
 	1|255)	EXIT;;
+	esac
+}
+
+function MENU_OPTIONS () {
+	case $1 in
+	0)	HEADER;;
+	1)	LICENSE;;
+	2)	CHANGELOG;;
+	I)	SCRIPTED_INSTALL;;
+	T)	MENU_RUTORRENT;;
+	V)	CHANGE_VHOST;;
+	S)	SSL_FOR_WEBSERVER;;
+	W)	WEBAUTH_TOGGLE;;
+	A)	ADD_USER_TO_WEBAUTH;;
+	U)	REMOVE_WEBAUTH_USER;;
+	R)	USE_UNRAR_NONFREE;;
+	H)	SOFTLINK_TO_HOMEDIR;;
+	G)	MOVE_RTORRENT_BASEDIR;;
+	X)	REMOVE_EVERYTHING;;
+	L)	INSTALLLOG;;
+	M)	REMOVELOG;;
+	9)	ADD_USER;;
+	6)	REMOVE_USER;;
+	4)	ALLOW_SSH;;
+	5)	DENY_SSH;;
+	7)	APACHE2;;
+	Z)	INSTALL_COMPLETE;;
+	N)	SCRIPT;;
+	C)	SELECT_USER;;
 	esac
 }
 
@@ -221,36 +250,6 @@ function REMOVELOG {
 	3)			rm -f $removelogfile;;
 	esac
 	MENU
-}
-
-function MENU_OPTIONS () {
-	case $1 in
-	0)	HEADER;;
-	1)	LICENSE;;
-	2)	CHANGELOG;;
-	I)	SCRIPTED_INSTALL;;
-	T)	MENU_RUTORRENT;;
-	V)	CHANGE_VHOST;;
-	S)	SSL_FOR_WEBSERVER;;
-	W)	WEBAUTH_TOGGLE;;
-	A)	ADD_USER_TO_WEBAUTH;;
-	U)	REMOVE_WEBAUTH_USER;;
-	H)	SOFTLINK_TO_HOMEDIR;;
-	X)	REMOVE_EVERYTHING;;
-	R)	USE_UNRAR_NONFREE;;
-	L)	INSTALLLOG;;
-	M)	REMOVELOG;;
-	9)	ADD_USER;;
-	6)	REMOVE_USER;;
-	4)	ALLOW_SSH;;
-	5)	DENY_SSH;;
-	7)	APACHE2;;
-	8)	RTORRENT_LOCAL "$stdin_user";;
-	E)	EDIT_RTORRENTRC "$stdin_user";;
-	Z)	INSTALL_COMPLETE;;
-	N)	SCRIPT;;
-	3)	SELECT_USER;;
-	esac
 }
 
 function HEADER {
@@ -331,17 +330,9 @@ function CHANGELOG {
 	#link=$(cat /home/$stdin_user/changelog)
 	# github
 	link=$(wget -q -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/changelog)
-	actuall_v=$(wget -qq -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-script.bash | grep -m1 script_versionumber | cut -d'=' -f2)
-	
-	if [[ "$script_versionumber" < "$actuall_v" ]]
-	then
-		backgroundtext="(actual version is V$actuall_v)"
-	else
-		backgroundtext=""
-	fi
 	
 	dialog --title "Changelog" --stdout --begin $x $y --no-collapse \
-	--backtitle "rtorrent & ruTorrent Installation Script V$script_versionumber $backgroundtext" \
+	--backtitle "rtorrent & ruTorrent Installation Script $script_versionumber" \
 	--msgbox "$link" $height $width
 	EXITCODE=$?
 	# Get exit status
@@ -372,14 +363,36 @@ function SELECT_USER () {
 	systemfull="$variablensystemname$system_last"
 	IFS='"' read -a SYSTEM_USERS <<< "$systemfull"
 	
-	USERS[2]=on
+	rtorrent_user_name=$(cat /etc/systemd/system/rtorrent.service | grep 'User' | cut -d'=' -f2)
+	rtorrent_user_group=$(groups $rtorrent_user_name | cut -d' ' -f3)
+	user_of_rtorrent_group=$(grep $rtorrent_user_group /etc/group | cut -d':' -f4)
+	IFS=',' read -a list_of_rtorrent_group_user <<< "$user_of_rtorrent_group"
+	
+	rtorrentuser=${list_of_rtorrent_group_user[@]/"www-data"}
+	rtorrentuser="${rtorrentuser[@]}"
+	#remove space from String
+	rtorrentuser=$(echo $rtorrentuser | sed 's/ //g')
+	
+	#https://stackoverflow.com/questions/15028567/get-the-index-of-a-value-in-a-bash-array
+	for i in "${!USERS[@]}"
+	do
+		[[ "${USERS[$i]}" = "${rtorrentuser}" ]] && break
+	done
+	echo $i
+		
+	for each in "${USERS[@]}"
+	do
+		echo "$each"
+	done
+	
+	USERS[$i+2]=on
 	SELECTED=$(dialog \
 	--title "Select rtorrent User" \
 	--stdout \
 	--begin $x $y \
 	--extra-button \
 	--extra-label "Add User"\
-	--radiolist "Select User" $height $width 13 "${USERS[@]}")
+	--radiolist "current rtorrent User (*)" $height $width 13 "${USERS[@]}")
 	EXITCODE=$?
 	# Get exit status
 	# 0 means user hit OK button.
@@ -395,13 +408,36 @@ function SELECT_USER () {
 	MENU
 }
 
+#rtorrent daemon user
+#rtorrent_daemon_user=rtorrent-deamon
+#rtorrent_daemon_group=rtorrent-common
+
 function PRESENT_USER () {
-	echo "Username:"
-	echo "$1"
-	echo "Group:"
-	echo "$(grep "$(id -u $1)" /etc/group | cut -d':' -f1)"
-	echo "home:"
-	echo "$(getent passwd "$1" | cut -d':' -f6)"
+	rtorrent_user_name=$(cat /etc/systemd/system/rtorrent.service | grep 'User' | cut -d'=' -f2)
+	rtorrent_user_group=$(groups $rtorrent_user_name | cut -d' ' -f3)
+	user_of_rtorrent_group=$(grep $rtorrent_user_group /etc/group | cut -d':' -f4)
+	IFS=',' read -a list_of_rtorrent_group_user <<< "$user_of_rtorrent_group"
+	
+	rtorrentuser=${list_of_rtorrent_group_user[@]/"www-data"}
+	rtorrentuser="${rtorrentuser[@]}"
+	#remove space from String
+	rtorrentuser=$(echo $rtorrentuser | sed 's/ //g')
+	
+	location=$(cat /etc/systemd/system/rtorrent.service | grep "ExecStart" | cut -d'=' -f3 | cut -d'.' -f1)
+	status=$(ls -lrt /home/$rtorrentuser | grep "rtorrent" | grep -c "^l")
+	
+	if [ $status == "1" ]
+	then
+		unlink /home/$rtorrentuser/rtorrent 2> /dev/null
+	fi
+	
+	deluser $rtorrentuser $rtorrent_user_group 1> /dev/null
+	usermod -a -G $rtorrent_user_group $1
+	
+	if [ $status == "1" ]
+	then
+		ln -s $location /home/$1/rtorrent
+	fi
 }
 
 function ADD_USER () {
@@ -433,7 +469,8 @@ function ADD_USER () {
 	IFS=$separator read -a SHOWN <<< "$OUTPUT"
 	
 	case $EXITCODE in
-	0)		CREATE_USER "${SHOWN[@]}";;
+	0)		CREATE_USER "${SHOWN[@]}"
+			PRESENT_USER "${SHOWN[0]}";;
 	1|255)	;;
 	esac
 	MENU
@@ -708,24 +745,6 @@ function APACHE2 {
 	systemctl restart apache2.service 1>> $LOG_REDIRECTION
 }
 
-function RTORRENT_LOCAL () {
-	# USER[_] 0 User attribute, 1 Username, 2 User password, 3 Usergroup = Username, 4 User homedir, 5 User SSH status
-	USER[0]=
-	USER[1]=$1
-	USER[2]=
-	USER[3]=$(grep "$(id -u $1)" /etc/group | cut -d':' -f1)
-	USER[4]=$(getent passwd "$1" | cut -d':' -f6)
-	USER[5]=
-	
-	RTORRENT "${USER[@]}"
-	EDIT_RTORRENTRC "${USER[@]}"
-	
-	systemctl enable rtorrent.service 1> /dev/null
-	systemctl start rtorrent.service 1> /dev/null
-	systemctl status rtorrent.service --no-pager 1> /dev/null
-	MENU
-}
-
 function RTORRENT () {
 	arr=("$@")
 	# USER[_] 0 User attribute, 1 Username, 2 User password, 3 Usergroup = Username, 4 User homedir, 5 User SSH status
@@ -835,6 +854,8 @@ WantedBy=default.target
 EOF
 }
 
+#https://www.freedesktop.org/software/systemd/man/systemd.kill.html#KillSignal=
+#https://github.com/rakshasa/rtorrent/wiki/User-Guide
 function RTORRENT_SERVICE () {
 	arr=("$@")
 	cat > "/etc/systemd/system/rtorrent.service" <<-EOF
@@ -848,69 +869,54 @@ Type=simple
 RemainAfterExit=yes
 User=${arr[1]}
 ExecStart=/usr/bin/rtorrent -n -o import=${arr[4]}/.rtorrent.rc
-KillMode=process
+KillMode=mixed
+KillSignal=SIGINT
+
 
 [Install]
 WantedBy=default.target
 EOF
 }
 
-function EDIT_RTORRENTRC () {
-	arr=("$@")
-	# USER[_] 0 User attribute, 1 Username, 2 User password, 3 Usergroup = Username, 4 User homedir, 5 User SSH status
-	USER[0]=
-	USER[1]=${arr[1]}
-	USER[2]=
-	USER[3]=${arr[3]}
-	USER[4]=${arr[4]}
-	USER[5]=
-	# 6 Portrange, 7 Portrange min, 8 Portrange max, 9 Randomportset, 10 rtorrent basedir
-	USER[6]=$(grep 'port_range.set' ${USER[4]}/.rtorrent.rc | cut -d' ' -f3)
-	USER[7]=$(echo ${USER[6]} | cut -d'-' -f1)
-	USER[8]=$(echo ${USER[6]} | cut -d'-' -f2)
-	USER[9]=$(grep 'port_random.set' ${USER[4]}/.rtorrent.rc | cut -d' ' -f3)
-	USER[10]=$(grep 'method.insert = cfg.basedir' ${USER[4]}/.rtorrent.rc | cut -d'"' -f2 | rev | cut -d'/' -f3- | rev)
-	# 11 new Portrange, 12 new Portrange min, 13 new Portrange max, 14 new Randomportset, 15 new rtorrent basedir
-	USER[11]=$(grep 'port_range.set' ${USER[4]}/.rtorrent.rc | cut -d' ' -f3)
-	USER[12]=$(echo ${USER[6]} | cut -d'-' -f1)
-	USER[13]=$(echo ${USER[6]} | cut -d'-' -f2)
-	USER[14]=$(grep 'port_random.set' ${USER[4]}/.rtorrent.rc | cut -d' ' -f3)
-	USER[15]=$(grep 'method.insert = cfg.basedir' ${USER[4]}/.rtorrent.rc | cut -d'"' -f2 | rev | cut -d'/' -f3- | rev)
+function MOVE_RTORRENT_BASEDIR () {
+	rtorrent_rc_path=$(cat /etc/systemd/system/rtorrent.service | grep "ExecStart" | cut -d'=' -f3)
+	rtorrent_basedir=$(echo $rtorrent_rc_path | rev | cut -d'/' -f3- | rev)
 	
-	CHANGE_RTORRENTRC "${USER[@]}"
-	systemctl restart rtorrent.service 1> /dev/null
-	MENU
-}
-
-function CHANGE_RTORRENTRC () {
-	arr=("$@")
-	HOMEDIR=${arr[4]}
-	PORT_RANGE=${arr[6]}
-	PORT_RANGE_MIN=${arr[7]}
-	PORT_RANGE_MAX=${arr[8]}
-	PORT_SET=${arr[9]}
-	DLFOLDER=${arr[10]}
+	rtorrent_user_name=$(cat /etc/systemd/system/rtorrent.service | grep 'User' | cut -d'=' -f2)
+	rtorrent_user_group=$(groups $rtorrent_user_name | cut -d' ' -f3)
 	
-	NEW_PORT_RANGE=${arr[11]}
-	NEW_PORT_RANGE_MIN=${arr[12]}
-	NEW_PORT_RANGE_MAX=${arr[13]}
-	NEW_PORT_SET=${arr[14]}
-	NEW_DLFOLDER=${arr[15]}
+	rtorrentuser=${list_of_rtorrent_group_user[@]/"www-data"}
+	rtorrentuser="${rtorrentuser[@]}"
+	#remove space from String
+	rtorrentuser=$(echo $rtorrentuser | sed 's/ //g')
 	
-	OUTPUT=$(dialog \
-	--title "Edit rtorrent.rc" \
-	--stdout \
-	--begin $x $y \
-	--trim \
-	--extra-button \
-	--colors \
-	--extra-label "Change Basedir" \
-	--output-separator $separator \
-	--default-button "ok" \
-	--mixedform "Port Range defines the usable Ports for rtorrent\n
+	#location=$(cat /etc/systemd/system/rtorrent.service | grep "ExecStart" | cut -d'=' -f3 | cut -d'.' -f1)
+	status=$(ls -lrt /home/$rtorrentuser | grep "rtorrent" | grep -c "^l")
+	
+	PORT_RANGE=$(grep 'port_range.set' $rtorrent_rc_path | cut -d' ' -f3)
+	PORT_RANGE_MIN=$(echo $PORT_RANGE | cut -d'-' -f1)
+	PORT_RANGE_MAX=$(echo $PORT_RANGE | cut -d'-' -f2)
+	PORT_SET=$(grep 'port_random.set' $rtorrent_rc_path | cut -d' ' -f3)
+	DLFOLDER=$rtorrent_basedir
+	
+	PRESENT_PORT_SET=$PORT_SET
+	PRESENT_DLFOLDER=$DLFOLDER
+	
+	while :; do
+		OUTPUT=$(dialog \
+		--title "Edit rtorrent.rc" \
+		--stdout \
+		--begin $x $y \
+		--trim \
+		--extra-button \
+		--colors \
+		--extra-label "Change Basedir" \
+		--output-separator $separator \
+		--default-button "ok" \
+		--mixedform "Port Range defines the usable Ports for rtorrent\n
 Random Listening Port let rtorrent set the Port randomly\n
 rtorrent folder stucture:\n
-	\Z4$NEW_DLFOLDER\Zn \n
+	\Z4$DLFOLDER\Zn \n
 	 └── /rtorrent \n
 	      ├── /.session \n
 	      ├── /download \n
@@ -918,62 +924,98 @@ rtorrent folder stucture:\n
 	      └── /watch \n
 	           ├── /load \n
 	           └── /start"\
-	$height $width 0 \
-	"Port Range                    :" 1 1  " $NEW_PORT_RANGE_MIN" 1 33  6 0 0 \
-	"-"                               1 39 " $NEW_PORT_RANGE_MAX" 1 40  6 0 0 \
-	"Random Listening Port (yes/no):" 2 1  "$NEW_PORT_SET"        2 33  5 0 0 \
-	"rtorrent Basedir              :" 3 1  "$NEW_DLFOLDER"        3 33 31 0 2 \
-	)
-	EXITCODE=$?
-	#echo $OUTPUT
-	#remove spaces from String
-	OUTPUT=$(echo $OUTPUT | sed 's/ //g')
-	IFS=$separator read -a SHOWN <<< "$OUTPUT"
+		$height $width 0 \
+		"Port Range                    :" 1 1  " $PORT_RANGE_MIN" 1 33  6 0 0 \
+		"-"                               1 39 " $PORT_RANGE_MAX" 1 40  6 0 0 \
+		"Random Listening Port (yes/no):" 2 1  "$PORT_SET"        2 33  5 0 0 \
+		"rtorrent basedir              :" 3 1  "$DLFOLDER"        3 33 31 0 2 \
+		)
+		EXITCODE=$?
+		#remove spaces from String
+		OUTPUT=$(echo $OUTPUT | sed 's/ //g')
+		IFS=$separator read -a SHOWN <<< "$OUTPUT"
+		
+		# Get exit status
+		# 0 means user hit OK button.
+		# 1 means user hit CANCEL button.
+		# 2 means user hit HELP button.
+		# 3 means user hit EXTRA button.
+		# 255 means user hit [Esc] key.
+		case $EXITCODE in
+		0)	
+			EXITLOOP=0
+			break;;
+		1|255)
+			EXITLOOP=1
+			break;;
+		3)
+			RETURN=$(dialog --stdout --begin $x $y --dselect "$DLFOLDER" 10 $width)
+			EXITCODE=$?
+			#https://stackoverflow.com/questions/9018723/what-is-the-simplest-way-to-remove-a-trailing-slash-from-each-parameter
+			RETURN=$(echo "$RETURN" | sed 's:/*$::')
+			# Get exit status
+			# 0 means user hit OK button.
+			# 1 means user hit CANCEL button.
+			# 2 means user hit HELP button.
+			# 3 means user hit EXTRA button.
+			# 255 means user hit [Esc] key.
+			case $EXITCODE in
+			0)		PORT_RANGE_MIN=${SHOWN[0]}
+					PORT_RANGE_MAX=${SHOWN[1]}
+					PORT_SET=${SHOWN[2]}
+					DLFOLDER=$RETURN;;
+			1|255)	EXITLOOP=1
+					break;;
+			esac
+		esac
+	done
 	
-	NEW_PORT_RANGE="${SHOWN[0]}-${SHOWN[1]}"
-	SELECTED="${SHOWN[2]}"
-	NEW_DLFOLDER="${SHOWN[3]}"
-	
-	arr[11]=$NEW_PORT_RANGE
-	arr[12]=${SHOWN[0]}
-	arr[13]=${SHOWN[1]}
-	arr[14]=${SHOWN[2]}
-	
-	# Get exit status
-	# 0 means user hit OK button.
-	# 1 means user hit CANCEL button.
-	# 2 means user hit HELP button.
-	# 3 means user hit EXTRA button.
-	# 255 means user hit [Esc] key.
-	case $EXITCODE in
-	0)		sed -i '/port_range.set/ s/'"$PORT_RANGE"'/'"$NEW_PORT_RANGE"'/' $HOMEDIR/.rtorrent.rc
-			sed -i '/port_random.set/ s/'"$PORT_SET"'/'"$SELECTED"'/' $HOMEDIR/.rtorrent.rc
-			sed -i 's#'"$DLFOLDER"'#'"$NEW_DLFOLDER"'#' $HOMEDIR/.rtorrent.rc
-			mkdir -p $NEW_DLFOLDER/rtorrent
-			chown -R ${arr[1]}:www-data $NEW_DLFOLDER/rtorrent;;
-	1|255)	;;
-	3)		CHANGE_DLFOLDER "${arr[@]}";;
+	case $EXITLOOP in
+	0)	# RC[_] 0 Portrange, 1 random port set, 2 rtorrent basedir
+		RC[0]="${SHOWN[0]}-${SHOWN[1]}"
+		RC[1]="${SHOWN[2]}"
+		RC[2]="${SHOWN[3]}"
+		
+		systemctl stop rtorrent.service 1> /dev/null
+		
+		sed -i '/port_range.set/ s/'"$PORT_RANGE"'/'"${RC[0]}"'/' $rtorrent_rc_path
+		sed -i '/port_random.set/ s/'"$PRESENT_PORT_SET"'/'"${RC[1]}"'/' $rtorrent_rc_path
+		
+		if [[ "$PRESENT_DLFOLDER" != "${RC[2]}" ]]
+		then
+			#echo "differ"
+			sed -i 's#'"$PRESENT_DLFOLDER"'#'"${RC[2]}"'#' $rtorrent_rc_path
+			
+			rm $PRESENT_DLFOLDER/rtorrent/.session/*.libtorrent_resume
+			rm $PRESENT_DLFOLDER/rtorrent/.session/*.rtorrent
+			#sed -i 's#'"$PRESENT_DLFOLDER"'#'"${RC[2]}"'#g' $PRESENT_DLFOLDER/rtorrent/.session/*.torrent.rtorrent
+			
+			sed -i 's#'"$PRESENT_DLFOLDER"'#'"${RC[2]}"'#' /etc/systemd/system/rtorrent.service
+			systemctl daemon-reload 1> /dev/null
+			
+			if [ $status == "1" ]
+			then
+				unlink /home/$rtorrentuser/rtorrent 2>> /dev/null
+			fi
+			
+			mv $PRESENT_DLFOLDER/rtorrent ${RC[2]}/rtorrent
+			chown -R $rtorrent_user_name:$rtorrent_user_group ${RC[2]}/rtorrent/.rtorrent.rc
+			
+			#echo $rtorrentuser
+			#echo ${RC[2]}
+			if [ $status == "1" ]
+			then
+				ln -s ${RC[2]}/rtorrent /home/$rtorrentuser/rtorrent
+			fi
+		else
+			:
+			#echo "same"
+		fi
+		
+		systemctl start rtorrent.service 1> /dev/null;;
+	1)	;;
 	esac
-}
-
-function CHANGE_DLFOLDER () {
-	arr=("$@")
-	
-	RETURN=$(dialog --stdout --begin $x $y --dselect "${arr[15]}" 10 $width)
-	EXITCODE=$?
-	RETURN=$(echo "$RETURN" | sed 's:/*$::')
-	
-	arr[15]=$RETURN
-	# Get exit status
-	# 0 means user hit OK button.
-	# 1 means user hit CANCEL button.
-	# 2 means user hit HELP button.
-	# 3 means user hit EXTRA button.
-	# 255 means user hit [Esc] key.
-	case $EXITCODE in
-	0)   	CHANGE_RTORRENTRC "${arr[@]}";;
-	1|255)	;;
-	esac
+	MENU
 }
 
 function SSL_FOR_WEBSERVER () {
@@ -1278,8 +1320,9 @@ function INSTALL_RUTORRENT () {
 		
 		#dependencies for ruTorrent addons
 		#                                                                        spectrogram Plugin
-		apt-get -y install ffmpeg libzen0v5 libmediainfo0v5 mediainfo unrar-free sox libsox-fmt-mp3 2>/dev/null 1>> $LOG_REDIRECTION
-		# php-geoip virtuelles Paket, bereitgestellt durch libapache2-mod-php7.3
+		apt-get -y install ffmpeg mediainfo unrar-free sox libsox-fmt-mp3 2>/dev/null 1>> $LOG_REDIRECTION
+		#libzen0v5 libmediainfo0v5
+		#php-geoip virtuelles Paket, bereitgestellt durch libapache2-mod-phpx.x
 		
 		#httprpc vs rpc, only one is nessesary choose the better: https://github.com/Novik/ruTorrent/discussions/2439
 		sed -i '$a[rpc]' /var/www/$SELECTED_CUT/conf/plugins.ini
@@ -1619,7 +1662,12 @@ function REMOVE_USER_FROM_WEBAUTH_AUTH () {
 }
 
 function SOFTLINK_TO_HOMEDIR {
-	rtorrentuser=$(find /home -name .rtorrent.rc | rev | cut -d'/' -f2 | rev)
+	rtorrent_user_name=$(cat /etc/systemd/system/rtorrent.service | grep 'User' | cut -d'=' -f2)
+	rtorrent_user_group=$(groups $rtorrent_user_name | cut -d' ' -f3)
+	user_of_rtorrent_group=$(grep $rtorrent_user_group /etc/group | cut -d':' -f4)
+	IFS=',' read -a list_of_rtorrent_group_user <<< "$user_of_rtorrent_group"
+	
+	rtorrentuser=${list_of_rtorrent_group_user[@]/"www-data"}
 	status=$(ls -lrt /home/$rtorrentuser | grep "rtorrent" | grep -c "^l")
 	
 	#        <tag1><item1>                <status1><tag2><item2>                <status2>
@@ -1658,9 +1706,20 @@ function SOFTLINK_TO_HOMEDIR {
 }
 
 function TOGGLE_SOFTLINK () {
-	HOMEDIR=$(find /home -name .rtorrent.rc | rev | cut -d'/' -f2- | rev)
-	status=$(ls -lrt /$HOMEDIR | grep "rtorrent" | grep -c "^l")
-	location=$(grep "method.insert = cfg.basedir" $HOMEDIR/.rtorrent.rc | cut -d'"' -f2)
+	rtorrent_user_name=$(cat /etc/systemd/system/rtorrent.service | grep 'User' | cut -d'=' -f2)
+	rtorrent_user_group=$(groups $rtorrent_user_name | cut -d' ' -f3)
+	user_of_rtorrent_group=$(grep $rtorrent_user_group /etc/group | cut -d':' -f4)
+	IFS=',' read -a list_of_rtorrent_group_user <<< "$user_of_rtorrent_group"
+	
+	rtorrentuser=${list_of_rtorrent_group_user[@]/"www-data"}
+	rtorrentuser="${rtorrentuser[@]}"
+	#remove space from String
+	rtorrentuser=$(echo $rtorrentuser | sed 's/ //g')
+	
+	status=$(ls -lrt /home/$rtorrentuser | grep "rtorrent" | grep -c "^l")
+	location=$(cat /etc/systemd/system/rtorrent.service | grep "ExecStart" | cut -d'=' -f3 | cut -d'.' -f1)
+	#echo "$rtorrentuser"
+	#echo "$status"
 	#echo "$location"
 	
 	if [ -d $location ]
@@ -1669,10 +1728,10 @@ function TOGGLE_SOFTLINK () {
 		then
 			if [ $status == "0" ]
 			then
-				ln -s $location $HOMEDIR/rtorrent
+				ln -s $location /home/$rtorrentuser/rtorrent
 			fi
 		else
-			unlink $HOMEDIR/rtorrent 2>> /dev/null
+			unlink /home/$rtorrentuser/rtorrent 2>> /dev/null
 		fi
 	else
 		dialog --title "Error" --stdout --begin $small_x $y --msgbox "rtorrent directory to link from not exist" $small_height $width
@@ -1848,17 +1907,18 @@ $answer2
 	PORT_SET="no"
 	DLFOLDER="/srv"
 	
-	OUTPUT=$(dialog \
-	--title "Edit rtorrent.rc" \
-	--stdout \
-	--begin $x $y \
-	--trim \
-	--extra-button \
-	--colors \
-	--extra-label "Change Basedir" \
-	--output-separator $separator \
-	--default-button "ok" \
-	--mixedform "Port Range defines the usable Ports for rtorrent\n
+	while :; do
+		OUTPUT=$(dialog \
+		--title "Edit rtorrent.rc" \
+		--stdout \
+		--begin $x $y \
+		--trim \
+		--extra-button \
+		--colors \
+		--extra-label "Change Basedir" \
+		--output-separator $separator \
+		--default-button "ok" \
+		--mixedform "Port Range defines the usable Ports for rtorrent\n
 Random Listening Port let rtorrent set the Port randomly\n
 rtorrent folder stucture:\n
 	\Z4$DLFOLDER\Zn \n
@@ -1869,36 +1929,17 @@ rtorrent folder stucture:\n
 	      └── /watch \n
 	           ├── /load \n
 	           └── /start"\
-	$height $width 0 \
-	"Port Range                    :" 1 1  " $PORT_RANGE_MIN" 1 33  6 0 0 \
-	"-"                               1 39 " $PORT_RANGE_MAX" 1 40  6 0 0 \
-	"Random Listening Port (yes/no):" 2 1  "$PORT_SET"        2 33  5 0 0 \
-	"rtorrent basedir              :" 3 1  "$DLFOLDER"        3 33 31 0 2 \
-	)
-	EXITCODE=$?
-	#remove spaces from String
-	OUTPUT=$(echo $OUTPUT | sed 's/ //g')
-	IFS=$separator read -a SHOWN <<< "$OUTPUT"
-	
-	# Get exit status
-	# 0 means user hit OK button.
-	# 1 means user hit CANCEL button.
-	# 2 means user hit HELP button.
-	# 3 means user hit EXTRA button.
-	# 255 means user hit [Esc] key.
-	case $EXITCODE in
-	0)
-		# RC[_] 0 Portrange, 1 random port set, 2 rtorrent basedir
-		RC[0]="${SHOWN[0]}-${SHOWN[1]}"
-		RC[1]="${SHOWN[2]}"
-		RC[2]="${SHOWN[3]}"
-		;;
-	1|255)	MENU;;
-	3)
-		RETURN=$(dialog --stdout --begin $x $y --dselect "$DLFOLDER" 10 $width)
+		$height $width 0 \
+		"Port Range                    :" 1 1  " $PORT_RANGE_MIN" 1 33  6 0 0 \
+		"-"                               1 39 " $PORT_RANGE_MAX" 1 40  6 0 0 \
+		"Random Listening Port (yes/no):" 2 1  "$PORT_SET"        2 33  5 0 0 \
+		"rtorrent basedir              :" 3 1  "$DLFOLDER"        3 33 31 0 2 \
+		)
 		EXITCODE=$?
-		#https://stackoverflow.com/questions/9018723/what-is-the-simplest-way-to-remove-a-trailing-slash-from-each-parameter
-		RETURN=$(echo "$RETURN" | sed 's:/*$::')
+		#remove spaces from String
+		OUTPUT=$(echo $OUTPUT | sed 's/ //g')
+		IFS=$separator read -a SHOWN <<< "$OUTPUT"
+		
 		# Get exit status
 		# 0 means user hit OK button.
 		# 1 means user hit CANCEL button.
@@ -1906,14 +1947,40 @@ rtorrent folder stucture:\n
 		# 3 means user hit EXTRA button.
 		# 255 means user hit [Esc] key.
 		case $EXITCODE in
-		0)
-			# RC[_] 0 Portrange, 1 random port set, 2 rtorrent basedir
-			RC[0]="${SHOWN[0]}-${SHOWN[1]}"
-			RC[1]="${SHOWN[2]}"
-			RC[2]=$RETURN
-			;;
-		1|255)	MENU;;
+		0)	
+			EXITLOOP=0
+			break;;
+		1|255)
+			EXITLOOP=1
+			break;;
+		3)
+			RETURN=$(dialog --stdout --begin $x $y --dselect "$DLFOLDER" 10 $width)
+			EXITCODE=$?
+			#https://stackoverflow.com/questions/9018723/what-is-the-simplest-way-to-remove-a-trailing-slash-from-each-parameter
+			RETURN=$(echo "$RETURN" | sed 's:/*$::')
+			# Get exit status
+			# 0 means user hit OK button.
+			# 1 means user hit CANCEL button.
+			# 2 means user hit HELP button.
+			# 3 means user hit EXTRA button.
+			# 255 means user hit [Esc] key.
+			case $EXITCODE in
+			0)		PORT_RANGE_MIN=${SHOWN[0]}
+					PORT_RANGE_MAX=${SHOWN[1]}
+					PORT_SET=${SHOWN[2]}
+					DLFOLDER=$RETURN;;
+			1|255)	EXITLOOP=1
+					break;;
+			esac
 		esac
+	done
+	
+	case $EXITLOOP in
+	0)	# RC[_] 0 Portrange, 1 random port set, 2 rtorrent basedir
+		RC[0]="${SHOWN[0]}-${SHOWN[1]}"
+		RC[1]="${SHOWN[2]}"
+		RC[2]="${SHOWN[3]}";;
+	1)	MENU;;
 	esac
 	
 	VERSIONS[2]="ON"
@@ -1936,7 +2003,7 @@ rtorrent folder stucture:\n
 function SUM () {
 	if [[ ${USER[0]} == "to_create" ]]
 	then
-		Deny_line="SSH Login for rtorrent User        \Z4${USER[5]}\Z0"
+		ssh_login=${USER[5]}
 	else
 		if (grep "^DenyUsers" /etc/ssh/sshd_config | grep -cq "${USER[1]}")
 		then
@@ -2021,34 +2088,36 @@ function INSTALLATION () {
 		fi
 	fi
 	
-	rtorrent_user=${USER[1]}
-	
 	#add rtorrent_daemon_group to rtorrent user
 	sudo groupadd --system $rtorrent_daemon_group
 	sudo usermod -a -G $rtorrent_daemon_group ${USER[1]}
 	
+	#create rtorrent_daemon_user as system user
 	adduser $rtorrent_daemon_user --system --allow-bad-names
 	sudo usermod -g $rtorrent_daemon_group $rtorrent_daemon_user
 	
-	USER[1]=$rtorrent_daemon_user
-	USER[3]=$rtorrent_daemon_group
-	USER[4]=${RC[2]}/rtorrent
-	
 	mkdir -p ${RC[2]}/rtorrent
-	chown -R ${USER[1]}:${USER[3]} ${RC[2]}/rtorrent
+	chown -R $rtorrent_daemon_user:$rtorrent_daemon_group ${RC[2]}/rtorrent
+	
+	RT_DAEMON[0]=""
+	RT_DAEMON[1]=$rtorrent_daemon_user
+	RT_DAEMON[2]=""
+	RT_DAEMON[3]=$rtorrent_daemon_group
+	RT_DAEMON[4]=${RC[2]}/rtorrent
+	RT_DAEMON[5]=""
 	
 	echo "Install rtorrent" 1>> $LOG_REDIRECTION
 	echo -e "XXX\n65\nInstall and configure rtorrent\nXXX"
-	(time RTORRENT "${USER[@]}") >> $LOG_REDIRECTION 2>&1
+	(time RTORRENT "${RT_DAEMON[@]}") >> $LOG_REDIRECTION 2>&1
 	
-	PORT_RANGE=$(grep 'port_range.set' ${USER[4]}/.rtorrent.rc | cut -d' ' -f3)
-	PORT_SET=$(grep 'port_random.set' ${USER[4]}/.rtorrent.rc | cut -d' ' -f3)
-	DLFOLDER=$(grep 'method.insert = cfg.basedir' ${USER[4]}/.rtorrent.rc | cut -d'"' -f2 | rev | cut -d'/' -f3- | rev)
+	PORT_RANGE=$(grep 'port_range.set' ${RC[2]}/rtorrent/.rtorrent.rc | cut -d' ' -f3)
+	PORT_SET=$(grep 'port_random.set' ${RC[2]}/rtorrent/.rtorrent.rc | cut -d' ' -f3)
+	DLFOLDER=$(grep 'method.insert = cfg.basedir' ${RC[2]}/rtorrent/.rtorrent.rc | cut -d'"' -f2 | rev | cut -d'/' -f3- | rev)
 	
 	# RC[_] 0 Portrange, 1 random port set, 2 rtorrent basedir
-	sed -i '/port_range.set/ s/'"$PORT_RANGE"'/'"${RC[0]}"'/' ${USER[4]}/.rtorrent.rc
-	sed -i '/port_random.set/ s/'"$PORT_SET"'/'"${RC[1]}"'/' ${USER[4]}/.rtorrent.rc
-	sed -i 's#'"$DLFOLDER"'#'"${RC[2]}"'#' ${USER[4]}/.rtorrent.rc
+	sed -i '/port_range.set/ s/'"$PORT_RANGE"'/'"${RC[0]}"'/' ${RC[2]}/rtorrent/.rtorrent.rc
+	sed -i '/port_random.set/ s/'"$PORT_SET"'/'"${RC[1]}"'/' ${RC[2]}/rtorrent/.rtorrent.rc
+	sed -i 's#'"$DLFOLDER"'#'"${RC[2]}"'#' ${RC[2]}/rtorrent/.rtorrent.rc
 	
 	echo "Enable rtorrent" 1>> $LOG_REDIRECTION
 	systemctl enable rtorrent.service 2>> $LOG_REDIRECTION
@@ -2056,7 +2125,7 @@ function INSTALLATION () {
 	systemctl status rtorrent.service --no-pager 1>> $LOG_REDIRECTION
 	
 	#softlink to rtorrent users homedir
-	ln -s ${RC[2]}/rtorrent/ /home/$rtorrent_user/rtorrent
+	ln -s ${RC[2]}/rtorrent/ /home/${USER[1]}/rtorrent
 	
 	echo "Install rutorrent" 1>> $LOG_REDIRECTION
 	echo -e "XXX\n70\nInstall and configure rutorrent\nXXX"
