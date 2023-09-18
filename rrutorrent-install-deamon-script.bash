@@ -19,7 +19,7 @@ rtorrent_daemon_user=rtorrent-deamon
 rtorrent_daemon_group=rtorrent-common
 
 #Script versionnumber
-script_versionumber="V2.4"
+script_versionumber="V2.5"
 #Fullmenu true,false
 fullmenu=false
 
@@ -728,7 +728,7 @@ function SYSTEM_UPDATE {
 }
 
 function APACHE2 {
-	apt-get -y install openssl apache2 apache2-utils php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION unzip curl 2>/dev/null 1>> $LOG_REDIRECTION
+	apt-get -y install openssl apache2 apache2-utils php$PHP_VERSION php$PHP_VERSION-mbstring php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION unzip curl 2>/dev/null 1>> $LOG_REDIRECTION
 	
 	#https://www.digitalocean.com/community/tutorials/apache-configuration-error-ah00558-could-not-reliably-determine-the-server-s-fully-qualified-domain-name
 	echo "ServerName 127.0.0.1" >> /etc/apache2/apache2.conf
@@ -871,7 +871,10 @@ User=${arr[1]}
 ExecStart=/usr/bin/rtorrent -n -o import=${arr[4]}/.rtorrent.rc
 KillMode=mixed
 KillSignal=SIGINT
-
+#Stop -> SIGINT - 10s - SIGTERM (if not stopped)
+#TimeoutStopSec=10
+#SendSIGKILL=yes
+#FinalKillSignal=SIGTERM
 
 [Install]
 WantedBy=default.target
@@ -1321,8 +1324,10 @@ function INSTALL_RUTORRENT () {
 		#dependencies for ruTorrent addons
 		#                                                                        spectrogram Plugin
 		apt-get -y install ffmpeg mediainfo unrar-free sox libsox-fmt-mp3 2>/dev/null 1>> $LOG_REDIRECTION
-		#libzen0v5 libmediainfo0v5
-		#php-geoip virtuelles Paket, bereitgestellt durch libapache2-mod-phpx.x
+		
+		#php-geoip wird nicht mehr gepflegt und php-geoip2 benötigt eine Registrierung
+		sed -i '$a[geoip]' /var/www/$SELECTED_CUT/conf/plugins.ini
+		sed -i '$aenabled = no' /var/www/$SELECTED_CUT/conf/plugins.ini
 		
 		#httprpc vs rpc, only one is nessesary choose the better: https://github.com/Novik/ruTorrent/discussions/2439
 		sed -i '$a[rpc]' /var/www/$SELECTED_CUT/conf/plugins.ini
@@ -2088,12 +2093,15 @@ function INSTALLATION () {
 		fi
 	fi
 	
+	adduser --system --no-create-home $rtorrent_daemon_user
+	
 	#add rtorrent_daemon_group to rtorrent user
 	sudo groupadd --system $rtorrent_daemon_group
 	sudo usermod -a -G $rtorrent_daemon_group ${USER[1]}
 	
 	#create rtorrent_daemon_user as system user
-	adduser $rtorrent_daemon_user --system --allow-bad-names
+	#adduser $rtorrent_daemon_user --system --force-badname
+	#--allow-bad-names
 	sudo usermod -g $rtorrent_daemon_group $rtorrent_daemon_user
 	
 	mkdir -p ${RC[2]}/rtorrent
