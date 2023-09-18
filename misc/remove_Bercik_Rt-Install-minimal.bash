@@ -72,7 +72,7 @@ function CLEAN_REST () {
 	apt-get autoremove -y
 }
 
-function START () {
+function START_REMOVE () {
 	REMOVE_RTORRENT
 	REMOVE_APACHE
 	CLEAN_REST
@@ -116,7 +116,7 @@ Please make sure all torrents are completed.
 	# 255 means user hit [Esc] key.
 	case $EXITCODE in
 	0)		MOVE_INTO;;
-	1|255)	;;
+	1|255)	EXIT;;
 	esac
 }
 
@@ -170,10 +170,36 @@ and moved into this structure:\n
 	done
 	
 	case $EXITLOOP in
-	0)	START
+	0)	START_REMOVE
 		dialog --title "Done" --stdout --begin $small_x $y --msgbox "\nInstallation removed" $small_height $width;;
 	1)	SCRIPTED_REMOVE;;
 	esac
 }
 
-SCRIPTED_REMOVE
+# https://github.com/pi-hole/pi-hole/blob/master/pihole
+function ROOT_CHECK {
+	# Must be root to use this tool
+	if [[ ! $EUID -eq 0 ]];
+	then
+		if [[ -x "$(command -v sudo)" ]];
+		then
+			exec sudo bash "$0"
+			exit 0
+		else
+			echo "sudo is needed to run commands. Please run this script as root or install sudo."
+			exit 1
+		fi
+	fi
+}
+
+function START {
+	ROOT_CHECK
+	SCRIPTED_REMOVE
+}
+
+function EXIT {
+	#https://stackoverflow.com/questions/49733211/bash-jump-to-bottom-of-terminal
+	tput cup $(tput lines) 0
+}
+
+START
