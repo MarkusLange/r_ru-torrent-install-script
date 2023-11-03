@@ -97,6 +97,7 @@ Or remove the installation if it doesn't fit your needs
   - did not use deprecated libapache2-mod-scgi (last update 1.13-1.1 02 Jul 2013, https://metadata.ftp-master.debian.org/changelogs//main/s/scgi/scgi_1.13-1.1_changelog)
   - remove Serversignature from Unauthorized HTML redirect from WebAuth (https://www.inmotionhosting.com/support/server/apache/hide-apache-version-and-linux-os/)
   - use localhostmode from ruTorrent (4.0.1+)
+  - remove deprecated geoip plugin since php-geoip is last shipped with php7.4
 - rtorrent
   - use of secure open_local instead of open_port from rtorrent with rutorrent (https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC)
   - uses latestest rtorrent.rc direct from rtorrent github (https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template)

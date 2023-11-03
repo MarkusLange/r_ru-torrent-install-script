@@ -32,6 +32,21 @@ x=2
 small_x=8
 y=5
 
+#os-release
+#ID:       | NAME               | VERSION_ID             | /etc/debian_version          | /etc/issue                        | /etc/rpi-issue | ->Distribution
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------
+#linuxmint | LMDE               | release number         | (debian)point release number | NAME+VERSION \n \l                | -              | LMDE
+#          | Linux Mint         | point release number   | (debian)VERSION_CODENAME/sid | PRETTYNAME+VERSION_CODENAME \n \l | -              | Linux Mint
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------
+#debian    | Debian GNU/Linux   | release number         | point release number         | NAME+VERSION_ID \n \l             | -              | Debian
+#          | Debian GNU/Linux   | release number         | point release number         | NAME+VERSION_ID \n \l             | yes            | Raspberry Pi OS
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------
+#ubuntu    | Ubuntu             | point release number   | (debian)VERSION_CODENAME/sid | PRETTY_NAME \n \l                 | -              | Ubuntu
+#          | Ubuntu             | point release number   | (debian)VERSION_CODENAME/sid | PRETTY_NAME \n \l                 | -              | Ubuntu LTS 
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------
+#raspbian  | Raspbian GNU/Linux | (debian)release number | (debian)point release number | NAME+VERSION_ID \n \l             | yes            | Raspbian
+#
+
 #system
 architecture=$(dpkg --print-architecture)
 bits=$(getconf LONG_BIT)
@@ -780,7 +795,9 @@ function RTORRENT () {
 	
 	#move socket to run
 	sed -i 's:(cat,(session.path),rpc.socket):/run/rtorrent/rpc.socket:' ${USER[4]}/.rtorrent.rc
-	sed -i ':rtorrent.pid: s:(session.path):/run/rtorrent/:' ${USER[4]}/.rtorrent.rc
+	#sed -i ':rtorrent.pid: s:(session.path):/run/rtorrent/:' ${USER[4]}/.rtorrent.rc ##not working correctly
+	sed -i 's:    (session.path):    /run/rtorrent/:' ${USER[4]}/.rtorrent.rc
+	##sed -i '/rtorrent.pid/ s/(session.path)/\/run\/rtorrent\//' ${USER[4]}/.rtorrent.rc
 	
 	#set rights to 770
 	sed -i '27iexecute.throw = chmod, -R, 770, (cat, (cfg.basedir))' ${USER[4]}/.rtorrent.rc
@@ -2271,7 +2288,7 @@ function REMOVE_ALL () {
 	fi
 	
 	echo -e "XXX\n30\nRemove Apache and PHP\nXXX"
-	apt-get purge -y apache2 apache2-utils apache2-bin php$PHP_VERSION php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION >> $removelogfile 2>&1
+	apt-get purge -y apache2 apache2-utils apache2-bin php$PHP_VERSION php$PHP_VERSION-mbstring php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION >> $removelogfile 2>&1
 	rm -R /var/www $(whereis apache2 | cut -d':' -f2)
 	
 	echo -e "XXX\n50\nRemove rtorrent\nXXX"

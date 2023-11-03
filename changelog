@@ -1,3 +1,9 @@
+Version 2.6
+* Correcting sed string since delimiter not working correctly
+  not meant strings also changed
+* Add mbstring for PHP to the Remove routine
+----------------------------------------------------------------
+
 Version 2.5
 * Add mbstring for PHP to Apache2 installation #2565
 * Change systemd stop from SIGTERM to SIGINT

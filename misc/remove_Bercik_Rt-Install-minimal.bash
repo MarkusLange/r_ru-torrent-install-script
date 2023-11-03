@@ -24,13 +24,9 @@ rtorrent_download_path=$(cat $rtorrent_rc_path | grep "directory = " | sed -re '
 function SCRIPT_BASE_INSTALL {
 	DIALOG_CHECK="$(dpkg-query -W -f='${Status}\n' dialog 2>/dev/null | grep -c "ok installed")"
 	
-	if [ "$DIALOG_CHECK" -ne 1 ] || [ "$WGET_CHECK" -ne 1 ];
+	if [ "$DIALOG_CHECK" -ne 1 ];
 	then
-		if [ "$DIALOG_CHECK" -ne 1 ];
-		then
-			base0=dialog
-		fi
-		apt-get -y install $base0
+		apt-get -y install dialog
 	fi
 }
 
