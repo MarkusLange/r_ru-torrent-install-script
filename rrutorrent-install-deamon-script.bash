@@ -15,7 +15,7 @@ LOG_REDIRECTION="/dev/null"
 #LOG_REDIRECTION=$logfile
 
 #rtorrent daemon user
-rtorrent_daemon_user=rtorrent-deamon
+rtorrent_daemon_user=rtorrent-daemon
 rtorrent_daemon_group=rtorrent-common
 
 #Script versionnumber
@@ -424,7 +424,7 @@ function SELECT_USER () {
 }
 
 #rtorrent daemon user
-#rtorrent_daemon_user=rtorrent-deamon
+#rtorrent_daemon_user=rtorrent-daemon
 #rtorrent_daemon_group=rtorrent-common
 
 function PRESENT_USER () {
@@ -1220,7 +1220,7 @@ function CONFIGURE_HTTPS_REDIRECT_CONF {
 <VirtualHost *:80>
 	ServerAlias *
 	RewriteEngine on
-	RewriteRule ^/(.*) https://%{HTTP_HOST}/$1 [NC,R=301,L]
+	RewriteRule ^/(.*) https://%{HTTP_HOST}/\$1 [NC,R=301,L]
 </VirtualHost>
 EOF
 	
