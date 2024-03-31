@@ -19,7 +19,7 @@ rtorrent_daemon_user=rtorrent-daemon
 rtorrent_daemon_group=rtorrent-common
 
 #Script versionnumber
-script_versionumber="V2.5"
+script_versionumber="V2.7"
 #Fullmenu true,false
 fullmenu=false
 
