@@ -19,7 +19,7 @@ rtorrent_daemon_user=rtorrent-daemon
 rtorrent_daemon_group=rtorrent-common
 
 #Script versionnumber
-script_versionumber="V2.7"
+script_versionumber="V2.8"
 #Fullmenu true,false
 fullmenu=false
 
@@ -743,7 +743,7 @@ function SYSTEM_UPDATE {
 }
 
 function APACHE2 {
-	apt-get -y install openssl apache2 apache2-utils php$PHP_VERSION php$PHP_VERSION-mbstring php$PHP_VERSION-curl php$PHP_VERSION-cli libapache2-mod-php$PHP_VERSION unzip curl 2>/dev/null 1>> $LOG_REDIRECTION
+	apt-get -y install openssl apache2 apache2-utils php$PHP_VERSION php$PHP_VERSION-mbstring php$PHP_VERSION-curl php$PHP_VERSION-cli php$PHP_VERSION-xml libapache2-mod-php$PHP_VERSION unzip curl 2>/dev/null 1>> $LOG_REDIRECTION
 	
 	#https://www.digitalocean.com/community/tutorials/apache-configuration-error-ah00558-could-not-reliably-determine-the-server-s-fully-qualified-domain-name
 	echo "ServerName 127.0.0.1" >> /etc/apache2/apache2.conf

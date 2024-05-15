@@ -1,3 +1,8 @@
+Version 2.8
+* fix Add PHP extension warnings for dom and libxml add php-xml
+  to apache2 installation
+----------------------------------------------------------------
+
 Version 2.7
 * fix typo from the rtorrent user
 ----------------------------------------------------------------
