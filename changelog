@@ -1,3 +1,8 @@
+Version 2.9
+* add option to change the rtorrent-deamon user inside the
+  script, can deactivate on top of the script
+----------------------------------------------------------------
+
 Version 2.8
 * fix Add PHP extension warnings for dom and libxml add php-xml
   to apache2 installation

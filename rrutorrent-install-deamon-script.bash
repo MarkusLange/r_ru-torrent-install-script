@@ -15,11 +15,12 @@ LOG_REDIRECTION="/dev/null"
 #LOG_REDIRECTION=$logfile
 
 #rtorrent daemon user
-rtorrent_daemon_user=rtorrent-daemon
-rtorrent_daemon_group=rtorrent-common
+the_user=rtorrent-daemon
+the_group=rtorrent-common
+change_on_script=true
 
 #Script versionnumber
-script_versionumber="V2.8"
+script_versionumber="V2.9"
 #Fullmenu true,false
 fullmenu=false
 
@@ -93,10 +94,9 @@ php_version=$(apt-cache policy php | head -3 | tail -1 | cut -d' ' -f4 | cut -d'
 apache2_version=$(apt-cache policy apache2 | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1)
 
 ## get mini UID limit ##
-low=$(grep "^UID_MIN" /etc/login.defs | cut -d' ' -f2)
+low=$(cat /etc/login.defs | grep "^UID_MIN" | grep -o '[[:digit:]]*')
 ## get max UID limit ##
-#high=$(grep "^UID_MAX" /etc/login.defs | cut -d' ' -f2)
-let high=$((2 * low))
+high=$(cat /etc/login.defs | grep "^UID_MAX" | grep -o '[[:digit:]]*')
 
 #system_low = 1 prevent root from using
 system_low=1
@@ -1857,6 +1857,12 @@ function SCRIPT () {
 		"Allow SSH (yes/no):" 4 1 "yes" 4 21  5 0 0 \
 		)
 		EXITCODE=$?
+		# Get exit status
+		# 0 means user hit OK button.
+		# 1 means user hit CANCEL button.
+		# 2 means user hit HELP button.
+		# 3 means user hit EXTRA button.
+		# 255 means user hit [Esc] key.
 		case $EXITCODE in
 		0)
 			OUTPUT=$(echo $OUTPUT | sed 's/ //g')
@@ -2004,6 +2010,68 @@ rtorrent folder stucture:\n
 		RC[2]="${SHOWN[3]}";;
 	1)	MENU;;
 	esac
+	
+	if $change_on_script
+	then
+		while :; do
+			OUTPUT=$(dialog \
+			--title "Set rtorrent user" \
+			--stdout \
+			--begin $x $y \
+			--insecure "$@" \
+			--trim \
+			--output-separator $separator \
+			--colors \
+			--default-button "ok" \
+			--ok-label "Default" \
+			--extra-button \
+			--extra-label "Change" \
+			--mixedform "Create User and Group for rtorrent deamon" \
+			$height $width 0 \
+			"Username :" 1 1 "$the_user"    1 12 20 0 0 \
+			"Usergroup:" 2 1 "$the_group"   2 12 20 0 0 \
+			)
+			EXITCODE=$?
+			# Get exit status
+			# 0 means user hit OK button.
+			# 1 means user hit CANCEL button.
+			# 2 means user hit HELP button.
+			# 3 means user hit EXTRA button.
+			# 255 means user hit [Esc] key.
+			#remove spaces from String
+			OUTPUT=$(echo $OUTPUT | sed 's/ //g')
+			IFS=$separator read -a DAEMON <<< "$OUTPUT"
+			case $EXITCODE in
+			0)	
+				EXITLOOP_DAEMON=0
+				break;;
+			1|255)	
+				MENU
+				;;
+			3)	
+				if [[ $(getent passwd | grep -c ^${DAEMON[0]}:) -ne 0 ]] || [[ ${USER[1]} == ${DAEMON[0]} ]]
+				then
+					dialog --title "Error" --stdout --begin $small_x $y --msgbox "\nUser ${DAEMON[0]} already exist, try again!" $small_height $width
+				else
+					EXITLOOP_DAEMON=1
+					break
+				fi
+				;;
+			esac
+		done
+		
+		case $EXITLOOP_DAEMON in
+		0)	rtorrent_daemon_user=$the_user
+			rtorrent_daemon_group=$the_group
+			;;
+		1)	rtorrent_daemon_user=${DAEMON[0]}
+			rtorrent_daemon_group=${DAEMON[1]}
+			;;
+		esac
+	else
+		rtorrent_daemon_user=$the_user
+		rtorrent_daemon_group=$the_group
+	fi
 	
 	VERSIONS[2]="ON"
 	RUTORRENT_VERSION=$(dialog --title "Choose ruTorrent Version" --stdout --begin $x $y --radiolist "ruTorrent Versions" $height $width 10 "${VERSIONS[@]}")
