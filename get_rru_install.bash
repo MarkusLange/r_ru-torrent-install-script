@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [[ -e rrutorrent-install-script.bash ]]
+if [[ -e rrutorrent-install-deamon-script.bash ]]
 then
-	current_v=$(cat rrutorrent-install-script.bash | grep -m1 script_versionumber | cut -d= -f2)
-	actuall_v=$(wget -qq -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-script.bash | grep -m1 script_versionumber | cut -d= -f2)
+	current_v=$(cat rrutorrent-install-deamon-script.bash | grep -m1 script_versionumber | sed 's/\"//g' | cut -dV -f2)
+	actuall_v=$(wget -qq -O - https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-deamon-script.bash | grep -m1 script_versionumber | sed 's/\"//g' | cut -dV -f2)
 	
 	if [[ "$current_v" < "$actuall_v" ]]
 	then
@@ -22,15 +22,15 @@ then
 		case "$case" in
 		d|D)
 			echo "downloading and starting new script..."
-			rm rrutorrent-install-script.bash
-			wget -qq https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-script.bash
-			chmod +x rrutorrent-install-script.bash
-			./rrutorrent-install-script.bash;;
+			rm rrutorrent-install-deamon-script.bash
+			wget -qq https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-deamon-script.bash
+			chmod +x rrutorrent-install-deamon-script.bash
+			./rrutorrent-install-deamon-script.bash;;
 		n|N)
 			echo "starting current script..."
-			./rrutorrent-install-script.bash;;
+			./rrutorrent-install-deamon-script.bash;;
 		c|C)
-			wget -q -O - "https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/changelog" | sed -ne "/^Version $actuall_v/,/^Version $current_v/p" | head -n  -2 | less -M
+			wget -q -O - "https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/changelog" | sed -ne "/^Version $actuall_v/,/^Version $current_v/p" | head -n -2 | less -M
 			clear
 			echo "-----------------------------------------------------------"
 			echo "use script version $actuall_v"
@@ -45,13 +45,13 @@ then
 			case "$case" in
 			d|D)
 				echo "downloading and starting new script..."
-				rm rrutorrent-install-script.bash
-				wget -qq https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-script.bash
-				chmod +x rrutorrent-install-script.bash
-				./rrutorrent-install-script.bash;;
+				rm rrutorrent-install-deamon-script.bash
+				wget -qq https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-deamon-script.bash
+				chmod +x rrutorrent-install-deamon-script.bash
+				./rrutorrent-install-deamon-script.bash;;
 			n|N)
 				echo "starting current script..."
-				./rrutorrent-install-script.bash;;
+				./rrutorrent-install-deamon-script.bash;;
 			q|Q|e|E|*)
 				exit 0;;
 			esac;;
@@ -61,11 +61,11 @@ then
 			exit 0;;
 		esac
 	else
-		./rrutorrent-install-script.bash
+		./rrutorrent-install-deamon-script.bash
 	fi
 else
 	echo "downloading script..."
-	wget -qq https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-script.bash
-	chmod +x rrutorrent-install-script.bash
-	./rrutorrent-install-script.bash
+	wget -qq https://raw.githubusercontent.com/MarkusLange/r_ru-torrent-install-script/main/rrutorrent-install-deamon-script.bash
+	chmod +x rrutorrent-install-deamon-script.bash
+	./rrutorrent-install-deamon-script.bash
 fi
