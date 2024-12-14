@@ -20,7 +20,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V2.9"
+script_versionumber="V3.0"
 #Fullmenu true,false
 fullmenu=false
 
@@ -863,6 +863,7 @@ After=apache2.service
 Type=oneshot
 RemainAfterExit=yes
 User=${arr[1]}
+Group=${arr[3]}
 ExecStart=/usr/bin/tmux -2 new-session -d -s rtorrent-session /usr/bin/rtorrent -n -o import=${arr[4]}/.rtorrent.rc
 ExecStop=/usr/bin/tmux send-keys -t rtorrent-session C-q
 
@@ -885,6 +886,7 @@ After=apache2.service
 Type=simple
 RemainAfterExit=yes
 User=${arr[1]}
+Group=${arr[3]}
 ExecStart=/usr/bin/rtorrent -n -o import=${arr[4]}/.rtorrent.rc
 KillMode=mixed
 KillSignal=SIGINT
@@ -1377,6 +1379,20 @@ function INSTALL_RUTORRENT () {
 				#:
 				echo "no _cloudflare" 1>> $LOG_REDIRECTION
 			fi
+		fi
+		
+		if [ "${SELECTED:0:2}" == "v5" ]
+		then
+			apt-get -y install git 2>/dev/null 1>> $LOG_REDIRECTION
+			git clone https://github.com/TheGoblinHero/dumptorrent.git >> $LOG_REDIRECTION 2>&1
+			make -C /home/$stdin_user/dumptorrent >>$LOG_REDIRECTION 2>&1
+			
+			chown root:root /home/$stdin_user/dumptorrent/dumptorrent
+			chown root:root /home/$stdin_user/dumptorrent/scrapec
+			cp -f /home/$stdin_user/dumptorrent/dumptorrent /bin
+			cp -f /home/$stdin_user/dumptorrent/scrapec /bin
+			
+			rm -rf /home/$stdin_user/dumptorrent/
 		fi
 		CREATE_AND_ACTIVATE_CONF $SELECTED_CUT
 		
@@ -2382,6 +2398,12 @@ function REMOVE_ALL () {
 	else
 		echo "No Python restrictions" 1>> $removelogfile
 		sudo python$python_version_major -m pip uninstall -y cloudscraper --quiet >> $removelogfile 2>&1
+	fi
+	
+	if [[ -e /bin/dumptorrent ]]
+	then
+		rm -f /bin/dumptorrent
+		rm -f /bin/scrapec
 	fi
 	
 	echo -e "XXX\n70\nClean system (apt autoremove)\nXXX"

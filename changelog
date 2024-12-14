@@ -1,3 +1,8 @@
+Version 3.0
+* add support for dumptorrent, since rutorrent v5.x
+* add Group in rtorrent.service
+----------------------------------------------------------------
+
 Version 2.9
 * add option to change the rtorrent-deamon user inside the
   script, can deactivate on top of the script
