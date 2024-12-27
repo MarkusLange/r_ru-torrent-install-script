@@ -1384,6 +1384,8 @@ function INSTALL_RUTORRENT () {
 		if [ "${SELECTED:0:2}" == "v5" ]
 		then
 			apt-get -y install git 2>/dev/null 1>> $LOG_REDIRECTION
+			rm -rf /home/$stdin_user/dumptorrent/
+			
 			git clone https://github.com/TheGoblinHero/dumptorrent.git >> $LOG_REDIRECTION 2>&1
 			make -C /home/$stdin_user/dumptorrent >>$LOG_REDIRECTION 2>&1
 			

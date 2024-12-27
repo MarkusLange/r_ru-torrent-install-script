@@ -36,7 +36,9 @@ function REMOVE_RTORRENT () {
 	systemctl daemon-reload
 	rm /etc/systemd/system/rtorrent.service
 	
-	apt-get purge -y rtorrent libxmlrpc-core-c3 libtorrent*
+	libtorrent_version=$(dpkg --get-selections | sed 's:install$::' | grep libtorrent | cut -d':' -f1)
+	apt-get purge -y rtorrent libxmlrpc-core-c3 $libtorrent_version
+	
 	#apt-get purge -y rtorrent
 	
 	rm $rtorrent_rc_path
