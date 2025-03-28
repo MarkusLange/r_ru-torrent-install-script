@@ -20,7 +20,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V3.0"
+script_versionumber="V3.1"
 #Fullmenu true,false
 fullmenu=false
 
@@ -75,9 +75,21 @@ then
 fi
 
 #rtorrent
-rtorrent_version=$(apt-cache policy rtorrent | head -3 | tail -1 | cut -d' ' -f4)
-rtorrent_version_micro=$(echo "$rtorrent_version" | cut -d'-' -f1 | cut -d'.' -f3)
+#rtorrent_version=$(apt-cache policy rtorrent | head -3 | tail -1 | cut -d' ' -f4)
+#rtorrent_version=$(apt-cache policy rtorrent | tail -2 | head -1 | cut -d' ' -f6)
+#rtorrent_version=$(apt-cache policy rtorrent | tail -3 | head -1 | cut -c 6- | cut -d' ' -f1)
+#rtorrent_version=$(apt-cache policy rtorrent | grep -A1 "Version table:" | tail -1 | cut -c 6- | cut -d' ' -f1)
+#rtorrent_version_micro=$(echo "$rtorrent_version" | cut -d'-' -f1 | cut -d'.' -f3)
+rtorrent_version=$(apt-cache policy rtorrent | grep -m 1 "500" | tail -1 | cut -c 6- | cut -d' ' -f1 | cut -d'-' -f1)
 libtorrent_version=$(apt-cache policy libtorrent?? | head -3 | tail -1 | cut -d' ' -f4)
+RTORRENT_VERSIONS=$(wget -q https://api.github.com/repos/rakshasa/rtorrent/releases -O - | grep tag_name | grep -v 0.9.7 | cut -d'"' -f4)
+
+RTORRENT_LIST="v$rtorrent_version $RTORRENT_VERSIONS"
+last='""off'
+variablenname=$(echo $RTORRENT_LIST | sed 's/ /""off"/g')
+full="$variablenname$last"
+IFS='"' read -a RT_VERSIONS <<< "$full"
+reposity_marker="from distro repository"
 
 #python
 python_path=$(ls -l /usr/bin/python? | tail -1 | rev | cut -d' ' -f3 | rev)
@@ -143,6 +155,7 @@ function MENU {
 	              "1" "Licence"
 	              "2" "Changelog"
 	              "I" "Scripted Installation"
+	              "E" "Update/Change rtorrent"
 	              "T" "Update/Change ruTorrent"
 	              "V" "Change VHost"
 	              "S" "Enable/Renew SSL for VHost"
@@ -204,6 +217,7 @@ function MENU_OPTIONS () {
 	1)	LICENSE;;
 	2)	CHANGELOG;;
 	I)	SCRIPTED_INSTALL;;
+	E)	MENU_RTORRENT;;
 	T)	MENU_RUTORRENT;;
 	V)	CHANGE_VHOST;;
 	S)	SSL_FOR_WEBSERVER;;
@@ -287,8 +301,6 @@ Operation System:\n\
    Distributor:            \Z4$distributor\Z0\n\
 \n\
 Software Versions:\n\
-   rtorrent:               \Z4$rtorrent_version\Z0\n\
-   libtorrent:             \Z4$libtorrent_version\Z0\n\
    Python:                 \Z4$python_version\Z0\n\
    Apache2:                \Z4$apache2_version\Z0\n\
    PHP:                    \Z4$php_version\Z0"\
@@ -305,6 +317,9 @@ Software Versions:\n\
 	esac
 	MENU
 }
+
+#   rtorrent(distro):       \Z4$rtorrent_version\Z0\n\
+#   libtorrent(distro):     \Z4$libtorrent_version\Z0\n\
 
 function LICENSE {
 	dialog \
@@ -760,6 +775,111 @@ function APACHE2 {
 	systemctl restart apache2.service 1>> $LOG_REDIRECTION
 }
 
+function MENU_RTORRENT () {
+	installed_rtorrent=$(rtorrent -h | grep "client version" | cut -d' ' -f5 | rev | sed 's/\.//' | rev)
+	#rtorrent_version=$(apt-cache policy rtorrent | tail -2 | head -1 | cut -d' ' -f6)
+	RT_VERSIONS[0]="v$rtorrent_version $reposity_marker"
+	RTORRENT_VERSION=$(dialog --title "Choose rTorrent Version" --stdout --begin $x $y --radiolist "rTorrent Versions installed is $installed_rtorrent" $height $width 10 "${RT_VERSIONS[@]}")
+	EXITCODE=$?
+	#echo $EXITCODE
+	#echo $RUTORRENT_VERSION
+	# Get exit status
+	# 0 means user hit OK button.
+	# 1 means user hit CANCEL button.
+	# 2 means user hit HELP button.
+	# 3 means user hit EXTRA button.
+	# 255 means user hit [Esc] key.
+	case $EXITCODE in
+	0)		UPDATE_RTORRENT;;
+	1|255)	;;
+	esac
+	MENU
+}
+
+function UPDATE_RTORRENT () {
+	systemctl stop apache2.service 1> /dev/null
+	systemctl stop rtorrent.service 1> /dev/null
+	
+	apt-get purge -y rtorrent libtorrent* >> $LOG_REDIRECTION 2>&1
+	
+	INSTALL_RTORRENT
+	
+	rtorrent_rc_path=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name .rtorrent.rc)
+	
+	if (( $(echo $RTORRENT_VERSION | cut -d' ' -f1 | cut -d'-' -f1 | sed 's/\.//g' | sed 's/0//' | sed 's/v//') >= 100 ))
+	then
+		sed -i '/^#trackers.delay_scrape.*/ s/^#//' $rtorrent_rc_path
+	fi
+	
+	if (( $(echo $RTORRENT_VERSION | cut -d' ' -f1 | cut -d'-' -f1 | sed 's/\.//g' | sed 's/0//' | sed 's/v//') < 100 ))
+	then
+		sed -i '/^trackers.delay_scrape.*/ s/^/#/' $rtorrent_rc_path
+	fi
+	
+	systemctl start rtorrent.service 1> /dev/null
+	systemctl start apache2.service 1> /dev/null
+}
+
+function INSTALL_RTORRENT () {
+	if [[ $RTORRENT_VERSION == "v$rtorrent_version $reposity_marker" ]]
+	then
+		apt-get -y install rtorrent 1>> $LOG_REDIRECTION
+	else
+		#apt-get install build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl3-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5 libncurses5-dev automake libtool libxmlrpc-core-c3-dev dialog checkinstall 1>> $LOG_REDIRECTION
+		
+		REPO_URL='https://api.github.com/repos/rakshasa/rtorrent/releases'
+		RESPONSE_LIST=$(wget -q $REPO_URL -O - | grep browser_download | cut -d'"' -f4)
+		#RESPONSE_LIST=$(wget -q --header='Accept: application/vnd.github+json' --header='X-GitHub-Api-Version: 2022-11-28' $REPO_URL -O -)
+		#RESPONSE_LIST=$(curl -s -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" $REPO_URL)
+		#curl -s -L -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/rakshasa/rtorrent/releases
+		#wget -q https://api.github.com/repos/rakshasa/rtorrent/releases -O - | grep browser_download | cut -d'"' -f4
+		
+		#echo "$RESPONSE_LIST" | grep $RTORRENT_VERSION | grep browser_download | cut -d'"' -f4
+		
+		for f in $(echo "$RESPONSE_LIST" | grep $RTORRENT_VERSION)
+		do
+			#echo $f
+			output=$(echo $f | cut -d'/' -f9 | cut -d'-' -f1)
+			wget -q "$f" -O "$output".tar.gz
+		done
+		
+		tar xzvf libtorrent.tar.gz | dialog --colors --begin $x $y --progressbox "libtorrent: \Z1tar,\Z0 configure, make, make install" $height $width
+		cd /home/$stdin_user/libtorrent-*
+		
+		#CPU Cores: The make option -j$(nproc) will utilize all available cpu cores.
+		#https://stackoverflow.com/questions/4975127/why-isnt-mkdir-p-working-right-in-a-script-called-by-checkinstall
+		#https://jasonwryan.com/blog/2011/11/29/rtorrent/
+		./configure --prefix=/usr/ 2>&1 | dialog --colors --begin $x $y --progressbox "libtorrent: tar, \Z1configure,\Z0 make, make install" $height $width
+		make -j$(nproc) 2>&1 | dialog --colors --begin $x $y --progressbox "libtorrent: tar, configure, \Z1make,\Z0 make install" $height $width
+		checkinstall -D -y --fstrans=no 2>&1 | dialog --colors --begin $x $y --progressbox "libtorrent: tar, configure, make, \Z1make install\Z0" $height $width
+		
+		cd /home/$stdin_user/
+		tar xzvf rtorrent.tar.gz | dialog --colors --begin $x $y --progressbox "rtorrent: \Z1tar,\Z0 configure, make, make install" $height $width
+		cd /home/$stdin_user/rtorrent-*
+		
+		#echo $(echo $RTORRENT_VERSION | cut -d'.' -f2)
+		if [[ "$(echo $RTORRENT_VERSION | cut -d'.' -f2)" -gt "10" ]]
+		then
+			#echo ">10"
+			./configure --with-xmlrpc-tinyxml2 --prefix=/usr/ --libdir=/usr/lib 2>&1 | dialog --colors --begin $x $y --progressbox "rtorrent: tar, \Z1configure,\Z0 make, make install" $height $width
+		else
+			#echo "<=10"
+			./configure --with-xmlrpc-c --prefix=/usr/ --libdir=/usr/lib 2>&1 | dialog --colors --begin $x $y --progressbox "rtorrent: tar, \Z1configure,\Z0 make, make install" $height $width
+		fi
+		
+		make -j$(nproc) 2>&1 | dialog --colors --begin $x $y --progressbox "rtorrent: tar, configure, \Z1make,\Z0 make install" $height $width
+		checkinstall -D -y --fstrans=no 2>&1 | dialog --colors --begin $x $y --progressbox "rtorrent: tar, configure, make, \Z1make install\Z0" $height $width
+		ldconfig
+		
+		cd /home/$stdin_user/
+		rm libtorrent.tar.gz
+		rm -r libtorrent-*
+		rm rtorrent.tar.gz
+		rm -r rtorrent-*
+		#rm description-pak
+	fi
+}
+
 function RTORRENT () {
 	arr=("$@")
 	# USER[_] 0 User attribute, 1 Username, 2 User password, 3 Usergroup = Username, 4 User homedir, 5 User SSH status
@@ -773,8 +893,6 @@ function RTORRENT () {
 	#echo ${USER[1]}
 	#echo ${USER[3]}
 	#echo ${USER[4]}
-	
-	apt-get -y install rtorrent 1>> $LOG_REDIRECTION
 	
 	#https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template
 	wget -q -O - "https://raw.githubusercontent.com/wiki/rakshasa/rtorrent/CONFIG-Template.md" | sed -ne "/^######/,/^### END/p" | sed -re "s:/home/USERNAME:/srv:" >${USER[4]}/.rtorrent.rc
@@ -802,7 +920,9 @@ function RTORRENT () {
 	#set rights to 770
 	sed -i '27iexecute.throw = chmod, -R, 770, (cat, (cfg.basedir))' ${USER[4]}/.rtorrent.rc
 	
-	if (( $rtorrent_version_micro <= 6 ))
+	#echo "0.15.1" | sed 's/\.//g' | sed 's/0//' | sed 's/v//'
+	#if (( $rtorrent_version_micro <= 6 ))
+	if (( $(echo $RTORRENT_VERSION | cut -d' ' -f1 | cut -d'-' -f1 | sed 's/\.//g' | sed 's/0//' | sed 's/v//') <= 96 ))
 	then
 		echo "rtorrent Version is equal or lower than 0.9.6" 1>> $LOG_REDIRECTION
 		apt-get install -y tmux 1>> $LOG_REDIRECTION
@@ -811,6 +931,14 @@ function RTORRENT () {
 		echo "daemon mode enabled since 0.9.7+" 1>> $LOG_REDIRECTION
 		sed -i '/system.daemon.set/ s/^#//' ${USER[4]}/.rtorrent.rc
 		RTORRENT_SERVICE "${USER[@]}"
+	fi
+	
+	sed -i '/^trackers.numwant.set.*/a #trackers.delay_scrape = yes' ${USER[4]}/.rtorrent.rc
+	
+	if (( $(echo $RTORRENT_VERSION | cut -d' ' -f1 | cut -d'-' -f1 | sed 's/\.//g' | sed 's/0//' | sed 's/v//') >= 100 ))
+	then
+		#sed -i '/^trackers.numwant.set.*/a trackers.delay_scrape = yes' ${USER[4]}/.rtorrent.rc
+		sed -i '/^#trackers.delay_scrape.*/ s/^#//' ${USER[4]}/.rtorrent.rc
 	fi
 	
 	echo "rtorrent.service" 1>> $LOG_REDIRECTION
@@ -1768,7 +1896,7 @@ function TOGGLE_SOFTLINK () {
 		then
 			if [ $status == "0" ]
 			then
-				ln -s $location /home/$rtorrentuser/rtorrent
+				sudo -u $rtorrentuser ln -s $location /home/$rtorrentuser/rtorrent
 			fi
 		else
 			unlink /home/$rtorrentuser/rtorrent 2>> /dev/null
@@ -2091,6 +2219,22 @@ rtorrent folder stucture:\n
 		rtorrent_daemon_group=$the_group
 	fi
 	
+	RT_VERSIONS[0]="v$rtorrent_version $reposity_marker"
+	RT_VERSIONS[2]="ON"
+	RTORRENT_VERSION=$(dialog --title "Choose rTorrent Version" --stdout --begin $x $y --radiolist "rTorrent Versions" $height $width 10 "${RT_VERSIONS[@]}")
+	#echo $EXITCODE
+	#echo $RUTORRENT_VERSION
+	# Get exit status
+	# 0 means user hit OK button.
+	# 1 means user hit CANCEL button.
+	# 2 means user hit HELP button.
+	# 3 means user hit EXTRA button.
+	# 255 means user hit [Esc] key.
+	case $EXITCODE in
+	0)		;;
+	1|255)	MENU;;
+	esac
+	
 	VERSIONS[2]="ON"
 	RUTORRENT_VERSION=$(dialog --title "Choose ruTorrent Version" --stdout --begin $x $y --radiolist "ruTorrent Versions" $height $width 10 "${VERSIONS[@]}")
 	EXITCODE=$?
@@ -2121,6 +2265,15 @@ function SUM () {
 		fi
 	fi
 	
+	if [[ $RTORRENT_VERSION == "v$rtorrent_version $reposity_marker" ]]
+	then
+		RTORRENT_VERSION_CHOOSE=$rtorrent_version
+		LIBTORRENT_VERSION_CHOOSE=$libtorrent_version
+	else
+		RTORRENT_VERSION_CHOOSE=${RTORRENT_VERSION:1}
+		LIBTORRENT_VERSION_CHOOSE=$(wget -q https://api.github.com/repos/rakshasa/rtorrent/releases -O - | grep browser_download | cut -d'"' -f4 | grep $RTORRENT_VERSION | grep libtorrent | cut -d'-' -f2 | cut -d'.' -f-3)
+	fi
+	
 	dialog --title "Scripted Installation" --stdout --begin $x $y --colors --yesno "\
 Configuration:\n\
 \n\
@@ -2133,7 +2286,8 @@ rtorrent system user               \Z4$rtorrent_daemon_user\Z0\n\
 rtorrent system group              \Z4$rtorrent_daemon_group\Z0\n\
 \n\
 rtorrent:\n\
-rtorrent version                   \Z4$rtorrent_version\Z0\n\
+rtorrent Version                   \Z4$RTORRENT_VERSION_CHOOSE\Z0\n\
+libtorrent Version                 \Z4$LIBTORRENT_VERSION_CHOOSE\Z0\n\
 rtorrent Basedir                   \Z4${RC[2]}\Z0\n\
 rtorrent.rc placed in              \Z4${RC[2]}/rtorrent\Z0\n\
 Portrange                          \Z4${RC[0]}\Z0\n\
@@ -2199,8 +2353,8 @@ function INSTALLATION () {
 	adduser --system --no-create-home $rtorrent_daemon_user
 	
 	#add rtorrent_daemon_group to rtorrent user
-	sudo groupadd --system $rtorrent_daemon_group
-	sudo usermod -a -G $rtorrent_daemon_group ${USER[1]}
+	sudo groupadd --system $rtorrent_daemon_group  >> $LOG_REDIRECTION 2>&1
+	sudo usermod -a -G $rtorrent_daemon_group ${USER[1]}  >> $LOG_REDIRECTION 2>&1
 	
 	#create rtorrent_daemon_user as system user
 	#adduser $rtorrent_daemon_user --system --force-badname
@@ -2219,6 +2373,10 @@ function INSTALLATION () {
 	
 	echo "Install rtorrent" 1>> $LOG_REDIRECTION
 	echo -e "XXX\n65\nInstall and configure rtorrent\nXXX"
+	apt-get install -y apt-utils build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl3-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5-dev automake libtool libxmlrpc-core-c3-dev checkinstall 2>/dev/null 1>> $LOG_REDIRECTION
+	#libncurses5
+	#INSTALL_RTORRENT
+	(time INSTALL_RTORRENT) >> $LOG_REDIRECTION 2>&1
 	(time RTORRENT "${RT_DAEMON[@]}") >> $LOG_REDIRECTION 2>&1
 	
 	PORT_RANGE=$(grep 'port_range.set' ${RC[2]}/rtorrent/.rtorrent.rc | cut -d' ' -f3)
@@ -2236,7 +2394,8 @@ function INSTALLATION () {
 	systemctl status rtorrent.service --no-pager 1>> $LOG_REDIRECTION
 	
 	#softlink to rtorrent users homedir
-	ln -s ${RC[2]}/rtorrent/ /home/${USER[1]}/rtorrent
+	#ln -s ${RC[2]}/rtorrent/ /home/${USER[1]}/rtorrent
+	sudo -u ${USER[1]} ln -s ${RC[2]}/rtorrent/ /home/${USER[1]}/rtorrent
 	
 	echo "Install rutorrent" 1>> $LOG_REDIRECTION
 	echo -e "XXX\n70\nInstall and configure rutorrent\nXXX"
@@ -2343,6 +2502,7 @@ function REMOVE_ALL () {
 	rtorrent_basedir=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name rtorrent-*.log | rev | cut -d'/' -f3- | rev | head -n 1)
 	softlink_link=$(find /home -type l | grep rtorrent)
 	
+	rtorrent_version_installed=$(rtorrent -h | grep "client version" | cut -d' ' -f5 | rev | sed 's/\.//' | rev)
 	rtorrent_user_name=$(cat /etc/systemd/system/rtorrent.service | grep 'User' | cut -d'=' -f2)
 	rtorrent_user_group=$(groups $rtorrent_user_name | cut -d' ' -f3)
 	user_of_rtorrent_group=$(grep $rtorrent_user_group /etc/group | cut -d':' -f4)
@@ -2378,7 +2538,9 @@ function REMOVE_ALL () {
 	rm -R /var/www $(whereis apache2 | cut -d':' -f2)
 	
 	echo -e "XXX\n50\nRemove rtorrent\nXXX"
-	apt-get purge -y rtorrent >> $removelogfile 2>&1
+	apt-get purge -y rtorrent libtorrent* >> $removelogfile 2>&1
+	apt-get purge -y apt-utils build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl3-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5-dev automake libtool libxmlrpc-core-c3-dev checkinstall >> $removelogfile 2>&1
+	#libncurses5
 	
 	echo -e "XXX\n60\nRemove ruTorrent plugins\nXXX"
 	#remove deb non-free list if exist
@@ -2461,7 +2623,7 @@ function REMOVE_ALL () {
 Removed  packages:\n\
 Apache2    (\Z4$apache2_version\Zn) + dependencies\n\
 PHP        (\Z4$php_version\Zn) + dependencies\n\
-rtorrent   (\Z4$rtorrent_version\Zn) + dependencies\n\
+rtorrent   (\Z4$rtorrent_version_installed\Zn) + dependencies\n\
 ruTorrent  (\Z4v$activ_rutorrent\Zn) + dependencies\n\
 \n\
 Removed files & folders:\n\

@@ -1,3 +1,12 @@
+Version 3.1
+* fix softlink to rtorrent users homedir, since debian looks for
+  the ownership
+* add support for compiling newer rtorrent versions v0.9.8 and
+  above and updating rtorrent or just use the repository vesion
+* rtorrent v0.9.7 is excepted for many reasons
+  https://github.com/rakshasa/rtorrent/issues/741
+----------------------------------------------------------------
+
 Version 3.0
 * add support for dumptorrent, since rutorrent v5.x
 * add Group in rtorrent.service
