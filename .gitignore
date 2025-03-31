@@ -8,6 +8,7 @@
 !README.md
 !rrutorrent-install-script.bash
 !rrutorrent-install-deamon-script.bash
+!librtorrent-install-from-git.bash
 !get_rru_install.bash
 !remove_Bercik_Rt-Install-minimal.bash
 !misc/

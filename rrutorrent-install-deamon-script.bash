@@ -20,7 +20,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V3.1"
+script_versionumber="V3.2"
 #Fullmenu true,false
 fullmenu=false
 
@@ -82,7 +82,7 @@ fi
 #rtorrent_version_micro=$(echo "$rtorrent_version" | cut -d'-' -f1 | cut -d'.' -f3)
 rtorrent_version=$(apt-cache policy rtorrent | grep -m 1 "500" | tail -1 | cut -c 6- | cut -d' ' -f1 | cut -d'-' -f1)
 libtorrent_version=$(apt-cache policy libtorrent?? | head -3 | tail -1 | cut -d' ' -f4)
-RTORRENT_VERSIONS=$(wget -q https://api.github.com/repos/rakshasa/rtorrent/releases -O - | grep tag_name | grep -v 0.9.7 | cut -d'"' -f4)
+RTORRENT_VERSIONS=$(wget -q https://api.github.com/repos/rakshasa/rtorrent/releases -O - | grep tag_name | grep -v '0.9.7\|0.15.2' | cut -d'"' -f4)
 
 RTORRENT_LIST="v$rtorrent_version $RTORRENT_VERSIONS"
 last='""off'
