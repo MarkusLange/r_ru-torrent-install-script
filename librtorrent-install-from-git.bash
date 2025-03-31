@@ -16,7 +16,7 @@ y=5
 
 #sudo apt-get install build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl3-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5 libncurses5-dev automake libtool libxmlrpc-core-c3-dev dialog checkinstall
 
-dialog --title "Information" --stdout --begin $x $y --colors --msgbox "\
+dialog --title "Information" --stdout --begin $x $y --colors --yesno "\
 This quick and dirty Script installs libTorrent and rTorrent\n\
 from the git repository, you can choose the branch for both\n\
 the versionnumber will set to the latest rtorrent version\n\
@@ -58,8 +58,8 @@ for i in "${!RT_VERSIONS[@]}"
 do
    if [[ "${RT_VERSIONS[$i]}" = "master" ]]
    then
-       #echo "${i}"
-	   RT_VERSIONS[$((${i}+2))]="ON"
+		#echo "${i}"
+		RT_VERSIONS[$((${i}+2))]="ON"
    fi
 done
 
@@ -89,8 +89,8 @@ for i in "${!LIBT_VERSIONS[@]}"
 do
    if [[ "${LIBT_VERSIONS[$i]}" = "master" ]]
    then
-       #echo "${i}"
-	   LIBT_VERSIONS[$((${i}+2))]="ON"
+		#echo "${i}"
+		LIBT_VERSIONS[$((${i}+2))]="ON"
    fi
 done
 
@@ -119,7 +119,9 @@ EXITCODE=$?
 # 255 means user hit [Esc] key.
 case $EXITCODE in
 	0)		;;
-	1|255)	exit 0;;
+	1|255)	tput cup $(tput lines) 0
+			echo ""
+			exit 0;;
 esac
 
 systemctl stop apache2.service 1> /dev/null
