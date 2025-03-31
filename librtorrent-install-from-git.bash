@@ -28,6 +28,8 @@ compiling will start after choosen the rtorrent branch.\n\
 The script will stop apache and replace libtorrent/rtorrent\n\
 and restart apache and rtorrent service.\n\
 \n\
+Script has to run with sudo or as root.\n\
+\n\
 No warrenty, good luck!" $height $width
 EXITCODE=$?
 # Get exit status
