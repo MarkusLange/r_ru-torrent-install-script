@@ -127,6 +127,8 @@ esac
 systemctl stop apache2.service 1> /dev/null
 systemctl stop rtorrent.service 1> /dev/null
 
+apt-get purge -y rtorrent libtorrent* >> /dev/null 2>&1
+
 git clone -b $LIBT_SELECTED --single-branch https://github.com/rakshasa/libtorrent.git libtorrent-$LIBT_SELECTED 2>&1 | dialog --colors --begin $x $y --progressbox "libtorrent: \Z1git,\Z0 autoreconf, configure, make, make install" $height $width
 cd /home/$stdin_user/libtorrent-$LIBT_SELECTED
 
