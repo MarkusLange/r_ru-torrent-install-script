@@ -122,6 +122,9 @@ case $EXITCODE in
 	1|255)	exit 0;;
 esac
 
+systemctl stop apache2.service 1> /dev/null
+systemctl stop rtorrent.service 1> /dev/null
+
 git clone -b $LIBT_SELECTED --single-branch https://github.com/rakshasa/libtorrent.git libtorrent-$LIBT_SELECTED 2>&1 | dialog --colors --begin $x $y --progressbox "libtorrent: \Z1git,\Z0 autoreconf, configure, make, make install" $height $width
 cd /home/$stdin_user/libtorrent-$LIBT_SELECTED
 
@@ -142,6 +145,9 @@ autoreconf -fi 2>&1 | dialog --colors --begin $x $y --progressbox "libtorrent: g
 make -j$(nproc) 2>&1 | dialog --colors --begin $x $y --progressbox "rtorrent: git, autoreconf, configure, \Z1make,\Z0 make install" $height $width
 checkinstall -D -y --fstrans=no --pkgversion=$rtorrents_latest 2>&1 | dialog --colors --begin $x $y --progressbox "rtorrent: git, autoreconf, configure, make, \Z1make install\Z0" $height $width
 ldconfig
+
+systemctl start rtorrent.service 1> /dev/null
+systemctl start apache2.service 1> /dev/null
 
 cd /home/$stdin_user/
 rm -r libtorrent-$LIBT_SELECTED
