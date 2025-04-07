@@ -37,7 +37,7 @@ Select our rtorrent user or add a new one
 
 ![rotrrent.rc](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ib_Scripted%20Installation_edit_rtorrent.PNG)
 
-Choose your rtorrent Version from repository or a release Version direcly from git (a seperate script is added to build is direcly from the Master or other Branches)
+Choose your rtorrent Version from repository or a release Version direcly from git (a seperate script is added to build it direcly from the Master or other Branches)
 
 ![ruTorrent](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ic_Scripted%20Installation_choose_rTorrent_version.PNG)
 
