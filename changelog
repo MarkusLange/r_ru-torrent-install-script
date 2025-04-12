@@ -1,3 +1,8 @@
+Version 3.3
+* update dumptorrent to new git repository and build process
+  changend since ruTorrent v5.1.7
+----------------------------------------------------------------
+
 Version 3.2
 * remove rtorrent v0.15.2 from the list due to compiling issues
 * add seperate Script to compile directly from git branch can

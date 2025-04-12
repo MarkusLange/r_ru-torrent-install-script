@@ -20,7 +20,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V3.2"
+script_versionumber="V3.3"
 #Fullmenu true,false
 fullmenu=false
 
@@ -1511,19 +1511,22 @@ function INSTALL_RUTORRENT () {
 		
 		if [ "${SELECTED:0:2}" == "v5" ]
 		then
-			apt-get -y install git 2>/dev/null 1>> $LOG_REDIRECTION
+			apt-get -y install git build-essential cmake 2>/dev/null 1>> $LOG_REDIRECTION
 			rm -rf /home/$stdin_user/dumptorrent/
 			
-			git clone https://github.com/TheGoblinHero/dumptorrent.git >> $LOG_REDIRECTION 2>&1
-			make -C /home/$stdin_user/dumptorrent >>$LOG_REDIRECTION 2>&1
+			git clone https://github.com/tomcdj71/dumptorrent.git >> $LOG_REDIRECTION 2>&1
+			cd dumptorrent
+			cmake -B build/ -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Release -S . >>$LOG_REDIRECTION 2>&1
+			cmake --build build/ --config Release --parallel $(nproc) >>$LOG_REDIRECTION 2>&1
 			
-			chown root:root /home/$stdin_user/dumptorrent/dumptorrent
-			chown root:root /home/$stdin_user/dumptorrent/scrapec
-			cp -f /home/$stdin_user/dumptorrent/dumptorrent /bin
-			cp -f /home/$stdin_user/dumptorrent/scrapec /bin
+			chmod +x build/dumptorrent build/scrapec
+			chown root:root /home/$stdin_user/dumptorrent/build/dumptorrent /home/$stdin_user/dumptorrent/build/scrapec
+			mv -f build/dumptorrent build/scrapec /bin
 			
 			rm -rf /home/$stdin_user/dumptorrent/
+			cd /home/$stdin_user/
 		fi
+		
 		CREATE_AND_ACTIVATE_CONF $SELECTED_CUT
 		
 		#only for install log needed
@@ -2795,7 +2798,7 @@ function ADD_REPOSITORY {
 $source
 EOF
 	
-	apt-get update 1>> $LOG_REDIRECTION
+	apt-get update >> $LOG_REDIRECTION 2>&1
 }
 
 function FROM_UNRAR_FREE_TO_NONFREE {
