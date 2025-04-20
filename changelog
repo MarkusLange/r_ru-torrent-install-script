@@ -1,3 +1,13 @@
+Version 3.4
+* move dumptorrent from git clone repository to git release
+  download adapt build process to deb package and install
+* fix a bug with the non-free-firmware repository in connection
+  with unrar, removed the non-free-firmware repository
+* rearrange the Menu from the unrar-free to unrar-nonfree
+  version change. Even if it is part of the repository the
+  switch can be abort as well
+----------------------------------------------------------------
+
 Version 3.3
 * update dumptorrent to new git repository and build process
   changend since ruTorrent v5.1.7

@@ -20,7 +20,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V3.3"
+script_versionumber="V3.4"
 #Fullmenu true,false
 fullmenu=false
 
@@ -823,7 +823,7 @@ function UPDATE_RTORRENT () {
 function INSTALL_RTORRENT () {
 	if [[ $RTORRENT_VERSION == "v$rtorrent_version $reposity_marker" ]]
 	then
-		apt-get -y install rtorrent 1>> $LOG_REDIRECTION
+		apt-get -y install rtorrent >> $LOG_REDIRECTION 2>&1
 	else
 		#apt-get install build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl3-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5 libncurses5-dev automake libtool libxmlrpc-core-c3-dev dialog checkinstall 1>> $LOG_REDIRECTION
 		
@@ -925,7 +925,7 @@ function RTORRENT () {
 	if (( $(echo $RTORRENT_VERSION | cut -d' ' -f1 | cut -d'-' -f1 | sed 's/\.//g' | sed 's/0//' | sed 's/v//') <= 96 ))
 	then
 		echo "rtorrent Version is equal or lower than 0.9.6" 1>> $LOG_REDIRECTION
-		apt-get install -y tmux 1>> $LOG_REDIRECTION
+		apt-get install -y tmux >> $LOG_REDIRECTION 2>&1
 		RTORRENT_TMUX_SERVICE "${USER[@]}"
 	else
 		echo "daemon mode enabled since 0.9.7+" 1>> $LOG_REDIRECTION
@@ -1469,7 +1469,7 @@ function INSTALL_RUTORRENT () {
 		chmod -R 775 /var/www/$SELECTED_CUT
 		
 		#dependencies for ruTorrent addons
-		#                                                                        spectrogram Plugin
+		#                                                  spectrogram Plugin
 		apt-get -y install ffmpeg mediainfo unrar-free sox libsox-fmt-mp3 2>/dev/null 1>> $LOG_REDIRECTION
 		
 		#php-geoip wird nicht mehr gepflegt und php-geoip2 benötigt eine Registrierung
@@ -1511,20 +1511,62 @@ function INSTALL_RUTORRENT () {
 		
 		if [ "${SELECTED:0:2}" == "v5" ]
 		then
-			apt-get -y install git build-essential cmake 2>/dev/null 1>> $LOG_REDIRECTION
-			rm -rf /home/$stdin_user/dumptorrent/
+			apt-get install -y build-essential git cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
+			# git only needed when cloning a repository
+			gem install fpm >> $LOG_REDIRECTION 2>&1
+
+			# Clone the repository
+			#rm -rf /home/$stdin_user/dumptorrent/
+			#git clone https://github.com/tomcdj71/dumptorrent.git >> $LOG_REDIRECTION 2>&1
+			#cd dumptorrent
 			
-			git clone https://github.com/tomcdj71/dumptorrent.git >> $LOG_REDIRECTION 2>&1
+			# Download lastest Release
+			rm -rf /home/$stdin_user/dumptorrent/
+			latest_dumptorrent=$(wget -q https://api.github.com/repos/tomcdj71/dumptorrent/releases/latest -O - | grep tag_name | cut -d'"' -f4)
+			wget -q https://github.com/tomcdj71/dumptorrent/archive/refs/tags/$latest_dumptorrent.tar.gz -O dumptorrent.tar.gz
+			mkdir dumptorrent
+			# https://wiki.ubuntuusers.de/tar/
+			tar xzvf dumptorrent.tar.gz -C dumptorrent --strip-components=1 >> $LOG_REDIRECTION 2>&1
+			rm -f dumptorrent.tar.gz
 			cd dumptorrent
-			cmake -B build/ -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Release -S . >>$LOG_REDIRECTION 2>&1
-			cmake --build build/ --config Release --parallel $(nproc) >>$LOG_REDIRECTION 2>&1
 			
-			chmod +x build/dumptorrent build/scrapec
-			chown root:root /home/$stdin_user/dumptorrent/build/dumptorrent /home/$stdin_user/dumptorrent/build/scrapec
-			mv -f build/dumptorrent build/scrapec /bin
+			# Build the binaries
+			cmake -B build/ -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Release -S . >> $LOG_REDIRECTION 2>&1
+			cmake --build build/ --config Release --parallel $(nproc) >> $LOG_REDIRECTION 2>&1
 			
-			rm -rf /home/$stdin_user/dumptorrent/
+			# Create necessary directories
+			mkdir -p staging/usr/bin
+			
+			# Copy binaries to staging area
+			cp build/dumptorrent build/scrapec staging/usr/bin/
+			
+			# Make binaries executable
+			chmod +x staging/usr/bin/dumptorrent staging/usr/bin/scrapec
+			
+			# Get version from CMakeLists.txt
+			dt_version=$(grep -oP '(?<=set\(DUMPTORRENT_VERSION ")[^"]*' CMakeLists.txt)
+			
+			# Create the package
+			fpm -s dir -t deb -C staging \
+			  --name dumptorrent \
+			  --version $dt_version \
+			  --architecture $architecture \
+			  --description "DumpTorrent is a command-line utility that displays detailed information about .torrent files" \
+			  --url "https://github.com/tomcdj71/dumptorrent" \
+			  --maintainer "Thomas Chauveau <contact.tomc@yahoo.com>" \
+			  --license "MIT" \
+			  --depends "libc6" \
+			  --deb-compression xz \
+			  --deb-priority optional \
+			  --category net \
+			  usr/bin >> $LOG_REDIRECTION 2>&1
+			
+			# Install the package
+			dpkg -i dumptorrent_*.deb
+			
+			# Clean the repository
 			cd /home/$stdin_user/
+			rm -rf /home/$stdin_user/dumptorrent/
 		fi
 		
 		CREATE_AND_ACTIVATE_CONF $SELECTED_CUT
@@ -2567,10 +2609,15 @@ function REMOVE_ALL () {
 		sudo python$python_version_major -m pip uninstall -y cloudscraper --quiet >> $removelogfile 2>&1
 	fi
 	
-	if [[ -e /bin/dumptorrent ]]
+	if [[ -e /usr/bin/dumptorrent ]]
 	then
-		rm -f /bin/dumptorrent
-		rm -f /bin/scrapec
+		apt-get purge -y cmake ruby ruby-dev >> $removelogfile 2>&1
+		if ( apt-cache show dumptorrent | grep -cq "installed" )
+		then
+			apt-get purge -y dumptorrent >> $removelogfile 2>&1
+		else
+			rm -f /usr/bin/dumptorrent /usr/bin/scrapec >> $removelogfile 2>&1
+		fi
 	fi
 	
 	echo -e "XXX\n70\nClean system (apt autoremove)\nXXX"
@@ -2707,13 +2754,31 @@ function INSTALL_UNRAR_NONFREE {
 	if ( apt-cache -q0 show unrar* 2>&1 | grep -cq "Package: unrar$" )
 	then
 		#echo "nonfree"
-		FROM_UNRAR_FREE_TO_NONFREE
+		#FROM_UNRAR_FREE_TO_NONFREE
+		dialog --title "Use unrar nonfree version" --stdout --begin $x $y --colors --yesno "\
+\Z4$distributor\Zn supports the nonfree package from repository.\n\
+\n\
+The non-free version will be added and the free version will\n\
+be removed. Choose < \Z1N\Zno  > if you don't want this."\
+		$height $width
+		EXITCODE=$?
+		#echo $EXITCODE
+		# Get exit status
+		# 0 means user hit OK button.
+		# 1 means user hit CANCEL button.
+		# 2 means user hit HELP button.
+		# 3 means user hit EXTRA button.
+		# 255 means user hit [Esc] key.
+		case $EXITCODE in
+		0)		FROM_UNRAR_FREE_TO_NONFREE;;
+		1|255)	;;
+		esac
 	else
 		#echo "no nonfree"
 		case $distributor in
 		raspbian)
 			dialog --title "Use unrar nonfree version" --stdout --begin $x $y --colors --yesno "\
-\Z4$distributor\Zn supports unrar packages via build from source\n\
+\Z4$distributor\Zn supports the unrar package via build from source\n\
 \n\
 The source repository will be added to the sources in the\n\
 progress. Choose < \Z1N\Zno  > if you don't want this."\
@@ -2731,9 +2796,9 @@ progress. Choose < \Z1N\Zno  > if you don't want this."\
 			1|255)	;;
 			esac
 			;;
-		*)
+		debian)
 			dialog --title "Use unrar nonfree version" --stdout --begin $x $y --colors --yesno "\
-\Z4$distributor\Zn supports nonfree packages via an additonal repository.\n\
+\Z4$distributor\Zn supports the nonfree package via an additonal repository.\n\
 \n\
 The non-free repository will be added to the sources in the\n\
 progress. Choose < \Z1N\Zno  > if you don't want this."\
@@ -2783,16 +2848,7 @@ function ADD_REPOSITORY {
 	#https://linuxhint.com/debian_sources-list/
 	#https://stackoverflow.com/questions/16956810/how-can-i-find-all-files-containing-specific-text-string-on-linux
 	
-	case $distributor in
-	debian)
-		case $codename in
-		bookworm)	source="$(grep -rnw "^deb" /etc/apt/ | grep "main" -m 1 | cut -d':' -f3- | cut -d' ' -f1-3) non-free non-free-firmware";;
-		*)			source="$(grep -rnw "^deb" /etc/apt/ | grep "main" -m 1 | cut -d':' -f3- | cut -d' ' -f1-3) non-free";;
-		esac
-		;;
-	*)
-		;;
-	esac
+	source="$(grep -rnw "^deb" /etc/apt/ | grep "main" -m 1 | cut -d':' -f3- | cut -d' ' -f1-3) non-free";;
 	
 	cat > "/etc/apt/sources.list.d/non_free.list" <<-EOF
 $source
