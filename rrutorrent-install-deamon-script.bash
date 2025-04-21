@@ -2848,7 +2848,7 @@ function ADD_REPOSITORY {
 	#https://linuxhint.com/debian_sources-list/
 	#https://stackoverflow.com/questions/16956810/how-can-i-find-all-files-containing-specific-text-string-on-linux
 	
-	source="$(grep -rnw "^deb" /etc/apt/ | grep "main" -m 1 | cut -d':' -f3- | cut -d' ' -f1-3) non-free";;
+	source="$(grep -rnw "^deb" /etc/apt/ | grep "main" -m 1 | cut -d':' -f3- | cut -d' ' -f1-3) non-free"
 	
 	cat > "/etc/apt/sources.list.d/non_free.list" <<-EOF
 $source
