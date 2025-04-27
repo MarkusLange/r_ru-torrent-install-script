@@ -20,7 +20,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V3.4"
+script_versionumber="V3.5"
 #Fullmenu true,false
 fullmenu=false
 
@@ -1453,11 +1453,19 @@ function INSTALL_RUTORRENT () {
 		rm /var/www/$SELECTED_CUT.zip
 		
 		#https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC
-		sed -i 's|scgi_port = 5000|scgi_port = 0|' /var/www/$SELECTED_CUT/conf/config.php
-		sed -i 's|scgi_host = "127.0.0.1"|scgi_host = "unix:///run/rtorrent/rpc.socket"|' /var/www/$SELECTED_CUT/conf/config.php
+		#sed -i 's|scgi_port = 5000|scgi_port = 0|' /var/www/$SELECTED_CUT/conf/config.php
+		#sed -i 's|scgi_host = "127.0.0.1"|scgi_host = "unix:///run/rtorrent/rpc.socket"|' /var/www/$SELECTED_CUT/conf/config.php
+		##sed -i 's#5000;#0;#' /var/www/$SELECTED_CUT/conf/config.php
+		##sed -i 's#"127.0.0.1";#"unix:///run/rtorrent/rpc.socket";#' /var/www/$SELECTED_CUT/conf/config.php
+		
+		#https://stackoverflow.com/questions/20808095/why-do-alternate-delimiters-not-work-with-sed-e-pattern-s-a-b
+		sed -i '/scgi_port/ s/5000/0/g' /var/www/$SELECTED_CUT/conf/config.php
+		sed -i '\|scgi_host| s|127.0.0.1|unix:///run/rtorrent/rpc.socket|g' /var/www/$SELECTED_CUT/conf/config.php
 		
 		#move ruTorrent errorlog to a folder writeable by www-data
-		sed -i 's#/tmp/errors.log#/var/log/apache2/rutorrent-errors.log#' /var/www/$SELECTED_CUT/conf/config.php
+		##sed -i 's#/tmp/errors.log#/var/log/apache2/rutorrent-errors.log#' /var/www/$SELECTED_CUT/conf/config.php
+		
+		sed -i '\|log_file| s|/tmp/errors.log|/var/log/apache2/rutorrent-errors.log|g' /var/www/$SELECTED_CUT/conf/config.php
 		
 		#use localHostedMode if available (rutorrent 4.0.1+)
 		if (grep -cq "localHostedMode" /var/www/$SELECTED_CUT/conf/config.php)
@@ -1562,7 +1570,7 @@ function INSTALL_RUTORRENT () {
 			  usr/bin >> $LOG_REDIRECTION 2>&1
 			
 			# Install the package
-			dpkg -i dumptorrent_*.deb
+			dpkg -i dumptorrent_*.deb >> $LOG_REDIRECTION 2>&1
 			
 			# Clean the repository
 			cd /home/$stdin_user/
