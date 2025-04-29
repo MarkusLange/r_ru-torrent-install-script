@@ -98,12 +98,13 @@ Or remove the installation if it doesn't fit your needs
 - ruTorrent
   - ruTorrent can easily updated
   - add python path to ruTorrent `config.php` to support cloudflare (3.9+)
-  - all included plugins supported and loaded
+  - all included plugins supported and loaded (except geoip)
+  - deactivate deprecated geoip plugin since php-geoip is last shipped with php7.4
   - choose to use httprpc in favor of rpc (both works, also simultaneously) for the XMLRPC (https://github.com/Novik/ruTorrent/discussions/2439)
   - did not use deprecated libapache2-mod-scgi (last update 1.13-1.1 02 Jul 2013, https://metadata.ftp-master.debian.org/changelogs//main/s/scgi/scgi_1.13-1.1_changelog)
   - remove Serversignature from Unauthorized HTML redirect from WebAuth (https://www.inmotionhosting.com/support/server/apache/hide-apache-version-and-linux-os/)
   - use localhostmode from ruTorrent (4.0.1+)
-  - remove deprecated geoip plugin since php-geoip is last shipped with php7.4
+  - integrate geoip2 as replacement for geoip
 - rtorrent
   - use of secure open_local instead of open_port from rtorrent with rutorrent (https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC)
   - uses latestest rtorrent.rc direct from rtorrent github (https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template)

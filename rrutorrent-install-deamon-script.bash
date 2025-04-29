@@ -20,7 +20,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V3.5"
+script_versionumber="V3.6"
 #Fullmenu true,false
 fullmenu=false
 
@@ -1448,39 +1448,25 @@ function INSTALL_RUTORRENT () {
 		SELECTED=$1
 		SELECTED_CUT="ruTorrent-${SELECTED:1}"
 		
+		############## install ruTorrent
 		wget -q https://github.com/Novik/ruTorrent/archive/refs/tags/$SELECTED.zip -O /var/www/$SELECTED_CUT.zip
 		unzip -qqo /var/www/$SELECTED_CUT.zip -d /var/www/
-		rm /var/www/$SELECTED_CUT.zip
+		rm /var/www/$SELECTED_CUT.zip	
 		
+		############## configure ruTorrent
 		#https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC
-		#sed -i 's|scgi_port = 5000|scgi_port = 0|' /var/www/$SELECTED_CUT/conf/config.php
-		#sed -i 's|scgi_host = "127.0.0.1"|scgi_host = "unix:///run/rtorrent/rpc.socket"|' /var/www/$SELECTED_CUT/conf/config.php
-		##sed -i 's#5000;#0;#' /var/www/$SELECTED_CUT/conf/config.php
-		##sed -i 's#"127.0.0.1";#"unix:///run/rtorrent/rpc.socket";#' /var/www/$SELECTED_CUT/conf/config.php
-		
 		#https://stackoverflow.com/questions/20808095/why-do-alternate-delimiters-not-work-with-sed-e-pattern-s-a-b
-		sed -i '/scgi_port/ s/5000/0/g' /var/www/$SELECTED_CUT/conf/config.php
-		sed -i '\|scgi_host| s|127.0.0.1|unix:///run/rtorrent/rpc.socket|g' /var/www/$SELECTED_CUT/conf/config.php
+		sed -i '/scgi_port/ s|5000|0|g' /var/www/$SELECTED_CUT/conf/config.php
+		sed -i '/scgi_host/ s|127.0.0.1|unix:///run/rtorrent/rpc.socket|g' /var/www/$SELECTED_CUT/conf/config.php
 		
 		#move ruTorrent errorlog to a folder writeable by www-data
-		##sed -i 's#/tmp/errors.log#/var/log/apache2/rutorrent-errors.log#' /var/www/$SELECTED_CUT/conf/config.php
+		sed -i '/log_file/ s|/tmp/errors.log|/var/log/apache2/rutorrent-errors.log|g' /var/www/$SELECTED_CUT/conf/config.php
 		
-		sed -i '\|log_file| s|/tmp/errors.log|/var/log/apache2/rutorrent-errors.log|g' /var/www/$SELECTED_CUT/conf/config.php
+		#use localHostedMode (rutorrent 4.0.1+)
+		sed -i '/localHostedMode/ s/false/true/' /var/www/$SELECTED_CUT/conf/config.php
 		
-		#use localHostedMode if available (rutorrent 4.0.1+)
-		if (grep -cq "localHostedMode" /var/www/$SELECTED_CUT/conf/config.php)
-		then
-			sed -i '/localHostedMode/ s/false/true/' /var/www/$SELECTED_CUT/conf/config.php
-		fi
-		
-		chown -R www-data:www-data /var/www/$SELECTED_CUT
-		chmod -R 775 /var/www/$SELECTED_CUT
-		
-		#dependencies for ruTorrent addons
-		#                                                  spectrogram Plugin
-		apt-get -y install ffmpeg mediainfo unrar-free sox libsox-fmt-mp3 2>/dev/null 1>> $LOG_REDIRECTION
-		
-		#php-geoip wird nicht mehr gepflegt und php-geoip2 benötigt eine Registrierung
+		############## install and configure plugins
+		# deactivate php-geoip outdated since php7.4
 		sed -i '$a[geoip]' /var/www/$SELECTED_CUT/conf/plugins.ini
 		sed -i '$aenabled = no' /var/www/$SELECTED_CUT/conf/plugins.ini
 		
@@ -1488,41 +1474,35 @@ function INSTALL_RUTORRENT () {
 		sed -i '$a[rpc]' /var/www/$SELECTED_CUT/conf/plugins.ini
 		sed -i '$aenabled = no' /var/www/$SELECTED_CUT/conf/plugins.ini
 		
-		if [[ $codename == "stretch" || $debian_version == "stretch" ]]
+		#dependencies for ruTorrent plugins
+		#                  screenshots
+		#                         mediainfo
+		#                                   unpack
+		#                                              spectrogram
+		apt-get -y install ffmpeg mediainfo unrar-free sox libsox-fmt-mp3 >> $LOG_REDIRECTION 2>&1
+		
+		#_cloudflare
+		#https://unix.stackexchange.com/questions/89913/sed-ignore-line-starting-whitespace-for-match
+		#https://stackoverflow.com/questions/7517632/how-do-i-escape-slashes-and-double-and-single-quotes-in-sed
+		sed -i '/^\s*$pathToExternals.*/a \		"python"=> '"'"''"$python_path"''"'"',' /var/www/$SELECTED_CUT/conf/config.php
+		apt-get install -y $python_pip >> $LOG_REDIRECTION 2>&1
+		
+		if [[ -e /usr/lib/python$python_version_major.$python_version_minor/EXTERNALLY-MANAGED ]]
 		then
-			echo "Debian 9" 1>> $LOG_REDIRECTION
-			echo "cloudflare does not work atm" 1>> $LOG_REDIRECTION
-			sed -i '$a[_cloudflare]' /var/www/$SELECTED_CUT/conf/plugins.ini
-			sed -i '$aenabled = no' /var/www/$SELECTED_CUT/conf/plugins.ini
+			echo "EXTERNALLY-MANAGED Python" 1>> $LOG_REDIRECTION
+			sudo python$python_version_major -m pip install cloudscraper --break-system-packages --quiet >> $LOG_REDIRECTION 2>&1
 		else
-			if [ "$SELECTED" != "v3.8" ]
-			then
-				echo "with _cloudflare" 1>> $LOG_REDIRECTION
-				#https://unix.stackexchange.com/questions/89913/sed-ignore-line-starting-whitespace-for-match
-				#https://stackoverflow.com/questions/7517632/how-do-i-escape-slashes-and-double-and-single-quotes-in-sed
-				sed -i '/^\s*$pathToExternals.*/a \		"python"=> '"'"''"$python_path"''"'"',' /var/www/$SELECTED_CUT/conf/config.php
-				apt-get install -y $python_pip 1>> $LOG_REDIRECTION
-				
-				if [[ -e /usr/lib/python$python_version_major.$python_version_minor/EXTERNALLY-MANAGED ]]
-				then
-					echo "EXTERNALLY-MANAGED Python" 1>> $LOG_REDIRECTION
-					sudo python$python_version_major -m pip install cloudscraper --break-system-packages --quiet >> $LOG_REDIRECTION 2>&1
-				else
-					echo "No Python restrictions" 1>> $LOG_REDIRECTION
-					sudo python$python_version_major -m pip install cloudscraper --quiet >> $LOG_REDIRECTION 2>&1
-				fi
-			else
-				#:
-				echo "no _cloudflare" 1>> $LOG_REDIRECTION
-			fi
+			echo "No Python restrictions" 1>> $LOG_REDIRECTION
+			sudo python$python_version_major -m pip install cloudscraper --quiet >> $LOG_REDIRECTION 2>&1
 		fi
 		
+		# dumptorrent plugin
 		if [ "${SELECTED:0:2}" == "v5" ]
 		then
 			apt-get install -y build-essential git cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
 			# git only needed when cloning a repository
 			gem install fpm >> $LOG_REDIRECTION 2>&1
-
+			
 			# Clone the repository
 			#rm -rf /home/$stdin_user/dumptorrent/
 			#git clone https://github.com/tomcdj71/dumptorrent.git >> $LOG_REDIRECTION 2>&1
@@ -1576,6 +1556,14 @@ function INSTALL_RUTORRENT () {
 			cd /home/$stdin_user/
 			rm -rf /home/$stdin_user/dumptorrent/
 		fi
+		
+		# geoip2 plugin
+		apt-get install git libapache2-mod-geoip php$PHP_VERSION-bcmath >> $LOG_REDIRECTION 2>&1
+		git clone --depth 1 https://github.com/MarkusLange/geoip2-rutorrent.git /var/www/$SELECTED_CUT/plugins/geoip2 >> $LOG_REDIRECTION 2>&1
+		rm -rf /var/www/$SELECTED_CUT/plugins/geoip2/.git
+		
+		chown -R www-data:www-data /var/www/$SELECTED_CUT
+		chmod -R 775 /var/www/$SELECTED_CUT	
 		
 		CREATE_AND_ACTIVATE_CONF $SELECTED_CUT
 		
