@@ -1499,7 +1499,7 @@ function INSTALL_RUTORRENT () {
 		# dumptorrent plugin
 		if [ "${SELECTED:0:2}" == "v5" ]
 		then
-			apt-get install -y build-essential git cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
+			apt-get install -y build-essential cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
 			# git only needed when cloning a repository
 			gem install fpm >> $LOG_REDIRECTION 2>&1
 			
@@ -1558,12 +1558,12 @@ function INSTALL_RUTORRENT () {
 		fi
 		
 		# geoip2 plugin
-		apt-get install git libapache2-mod-geoip php$PHP_VERSION-bcmath >> $LOG_REDIRECTION 2>&1
-		git clone --depth 1 https://github.com/MarkusLange/geoip2-rutorrent.git /var/www/$SELECTED_CUT/plugins/geoip2 >> $LOG_REDIRECTION 2>&1
+		apt-get install -y git libapache2-mod-geoip php$PHP_VERSION-bcmath >> $LOG_REDIRECTION 2>&1
+		git clone --depth=1 https://github.com/MarkusLange/geoip2-rutorrent.git /var/www/$SELECTED_CUT/plugins/geoip2 >> $LOG_REDIRECTION 2>&1
 		rm -rf /var/www/$SELECTED_CUT/plugins/geoip2/.git
 		
 		chown -R www-data:www-data /var/www/$SELECTED_CUT
-		chmod -R 775 /var/www/$SELECTED_CUT	
+		chmod -R 775 /var/www/$SELECTED_CUT
 		
 		CREATE_AND_ACTIVATE_CONF $SELECTED_CUT
 		
