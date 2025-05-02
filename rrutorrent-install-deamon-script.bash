@@ -4,6 +4,10 @@ export NCURSES_NO_UTF8_ACS=1
 separator=":"
 #user associated with stdin "who am i"
 stdin_user=$(who -m | cut -d' ' -f1)
+if [ -z "$stdin_user" ]
+	then
+	stdin_user=$(logname)
+fi
 
 #Install Logfile
 logfile=/home/$stdin_user/install.log
@@ -20,7 +24,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V3.6"
+script_versionumber="V3.7"
 #Fullmenu true,false
 fullmenu=false
 
@@ -299,6 +303,8 @@ Operation System:\n\
    Version:                \Z4$version\Z0\n\
    OS Codename:            \Z4$codename\Z0\n\
    Distributor:            \Z4$distributor\Z0\n\
+\n\
+   Active user:            \Z4$stdin_user\Z0\n\
 \n\
 Software Versions:\n\
    Python:                 \Z4$python_version\Z0\n\
@@ -2615,6 +2621,8 @@ function REMOVE_ALL () {
 			rm -f /usr/bin/dumptorrent /usr/bin/scrapec >> $removelogfile 2>&1
 		fi
 	fi
+	
+	apt-get purge -y git libapache2-mod-geoip php$PHP_VERSION-bcmath
 	
 	echo -e "XXX\n70\nClean system (apt autoremove)\nXXX"
 	apt-get clean -y >> $removelogfile 2>&1

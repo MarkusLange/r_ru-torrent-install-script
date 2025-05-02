@@ -1,3 +1,9 @@
+Version 3.7
+* fix an issue with Ubuntu, who 9.5 changed  working the
+  response to "who -m" is empty now workaraound for empty output
+  with "logname"
+----------------------------------------------------------------
+
 Version 3.6
 * drop support for ruTorrent v3.8 and Debian 9 Stretch
 * cleanup ruTorrent and rearrange the script part of it
