@@ -1,3 +1,12 @@
+Version 3.8
+* remove last stderr messages from screen when remove
+  installation
+* moved complete to logname to detect the current activ user
+* drop support for rtorrent 0.9.6 and older
+* cleanup rtorrent install function
+* add ruby gems to the uninstall function
+----------------------------------------------------------------
+
 Version 3.7
 * fix an issue with Ubuntu, who 9.5 changed  working the
   response to "who -m" is empty now workaraound for empty output

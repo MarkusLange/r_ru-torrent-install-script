@@ -3,11 +3,11 @@ export NCURSES_NO_UTF8_ACS=1
 #dialog output seperator
 separator=":"
 #user associated with stdin "who am i"
-stdin_user=$(who -m | cut -d' ' -f1)
-if [ -z "$stdin_user" ]
-	then
-	stdin_user=$(logname)
-fi
+#stdin_user=$(who -m | cut -d' ' -f1)
+#https://www.baeldung.com/linux/get-current-user
+#switched to logname as standard
+stdin_user=$(logname)
+
 
 #Install Logfile
 logfile=/home/$stdin_user/install.log
@@ -24,7 +24,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V3.7"
+script_versionumber="V3.8"
 #Fullmenu true,false
 fullmenu=false
 
@@ -901,51 +901,51 @@ function RTORRENT () {
 	#echo ${USER[4]}
 	
 	#https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template
-	wget -q -O - "https://raw.githubusercontent.com/wiki/rakshasa/rtorrent/CONFIG-Template.md" | sed -ne "/^######/,/^### END/p" | sed -re "s:/home/USERNAME:/srv:" >${USER[4]}/.rtorrent.rc
+	wget -q -O - "https://raw.githubusercontent.com/wiki/rakshasa/rtorrent/CONFIG-Template.md" | sed -ne "/^######/,/^### END/p" > ${USER[4]}/.rtorrent.rc
+	
+	############## add lines
+	#add socket.path to link pid and socket to run
+	sed -i '/method.insert = cfg.watch/a method.insert = socket.path,  private|const|string, (cat,"/run/rtorrent/")' ${USER[4]}/.rtorrent.rc
+	sed -i '/trackers.numwant.set/a #trackers.delay_scrape = yes' ${USER[4]}/.rtorrent.rc
+	
+	sed -i '/network.http.ssl_verify_host.set/a #network.rpc.use_xmlrpc.set = true' ${USER[4]}/.rtorrent.rc
+	sed -i '/network.rpc.use_xmlrpc.set/a #network.rpc.use_jsonrpc.set = true' ${USER[4]}/.rtorrent.rc
+	
+	#https://github.com/rakshasa/rtorrent/issues/949#issuecomment-572528586
+	sed -i '/system.umask/a session.use_lock.set = no' ${USER[4]}/.rtorrent.rc
+	
+	############## changes lines
+	#move cfg.basedir to srv
+	sed -i 's:/home/USERNAME:/srv:' ${USER[4]}/.rtorrent.rc
+	#move pid to run
+	sed -i '/rtorrent.pid/ s/session.path/socket.path/' ${USER[4]}/.rtorrent.rc
+	#move socket to run
+	sed -i '/rpc.socket/ s/session.path/socket.path/' ${USER[4]}/.rtorrent.rc
+	
+	#rpc enabled from local socket
+	#https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC
+	#https://www.cyberciti.biz/faq/how-to-use-sed-to-find-and-replace-text-in-files-in-linux-unix-shell/
+	sed -i '/rpc.socket/ s/^#//' ${USER[4]}/.rtorrent.rc
+	
+	#enable daemon mode enabled since 0.9.7+
+	sed -i '/system.daemon.set/ s/^#//' ${USER[4]}/.rtorrent.rc
+	
+	#change system.umask.set to 0007 so 660
+	sed -i '/system.umask/ s/0027/0007/' ${USER[4]}/.rtorrent.rc
+	
+	if (( $(echo $RTORRENT_VERSION | cut -d' ' -f1 | cut -d'-' -f1 | sed 's/\.//g' | sed 's/0//' | sed 's/v//') >= 100 ))
+	then
+		sed -i '/^#trackers.delay_scrape.*/ s/^#//' ${USER[4]}/.rtorrent.rc
+	fi
+	
+	#https://collectingwisdom.com/sed-replace-multiple-empty-lines-with-one/
+	#replace multiple empty lines with one single empty line for fun
+	sed -i '/^$/N;/^\n$/D' ${USER[4]}/.rtorrent.rc
 	
 	chown -R ${USER[1]}:${USER[3]} ${USER[4]}/.rtorrent.rc
 	
 	CREATE_TMPFILES "${USER[@]}"
-	
-	#https://github.com/rakshasa/rtorrent/issues/949#issuecomment-572528586
-	sed -i '/^system.umask.*/a session.use_lock.set = no' ${USER[4]}/.rtorrent.rc
-	#rpc enabled from local socket
-	#https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC
-	#https://www.cyberciti.biz/faq/how-to-use-sed-to-find-and-replace-text-in-files-in-linux-unix-shell/
-	sed -i '/(session.path),rpc.socket)/ s/^#//' ${USER[4]}/.rtorrent.rc
-	
-	#not usable links sessiondata also to run/torrent removes everything on reboot
-	#sed -i 's:(cfg.basedir),".session/":"/run/rtorrent/":' ${USER[4]}/.rtorrent.rc
-	
-	#move socket to run
-	sed -i 's:(cat,(session.path),rpc.socket):/run/rtorrent/rpc.socket:' ${USER[4]}/.rtorrent.rc
-	#sed -i ':rtorrent.pid: s:(session.path):/run/rtorrent/:' ${USER[4]}/.rtorrent.rc ##not working correctly
-	sed -i 's:    (session.path):    /run/rtorrent/:' ${USER[4]}/.rtorrent.rc
-	##sed -i '/rtorrent.pid/ s/(session.path)/\/run\/rtorrent\//' ${USER[4]}/.rtorrent.rc
-	
-	#set rights to 770
-	sed -i '27iexecute.throw = chmod, -R, 770, (cat, (cfg.basedir))' ${USER[4]}/.rtorrent.rc
-	
-	#echo "0.15.1" | sed 's/\.//g' | sed 's/0//' | sed 's/v//'
-	#if (( $rtorrent_version_micro <= 6 ))
-	if (( $(echo $RTORRENT_VERSION | cut -d' ' -f1 | cut -d'-' -f1 | sed 's/\.//g' | sed 's/0//' | sed 's/v//') <= 96 ))
-	then
-		echo "rtorrent Version is equal or lower than 0.9.6" 1>> $LOG_REDIRECTION
-		apt-get install -y tmux >> $LOG_REDIRECTION 2>&1
-		RTORRENT_TMUX_SERVICE "${USER[@]}"
-	else
-		echo "daemon mode enabled since 0.9.7+" 1>> $LOG_REDIRECTION
-		sed -i '/system.daemon.set/ s/^#//' ${USER[4]}/.rtorrent.rc
-		RTORRENT_SERVICE "${USER[@]}"
-	fi
-	
-	sed -i '/^trackers.numwant.set.*/a #trackers.delay_scrape = yes' ${USER[4]}/.rtorrent.rc
-	
-	if (( $(echo $RTORRENT_VERSION | cut -d' ' -f1 | cut -d'-' -f1 | sed 's/\.//g' | sed 's/0//' | sed 's/v//') >= 100 ))
-	then
-		#sed -i '/^trackers.numwant.set.*/a trackers.delay_scrape = yes' ${USER[4]}/.rtorrent.rc
-		sed -i '/^#trackers.delay_scrape.*/ s/^#//' ${USER[4]}/.rtorrent.rc
-	fi
+	RTORRENT_SERVICE "${USER[@]}"
 	
 	echo "rtorrent.service" 1>> $LOG_REDIRECTION
 	cat /etc/systemd/system/rtorrent.service >> $LOG_REDIRECTION
@@ -962,48 +962,6 @@ EOF
 	# inital placement for the direct run
 	mkdir -p /run/rtorrent
 	chown -R ${arr[1]}:${arr[3]} /run/rtorrent
-	#chmod -R 775 /run/rtorrent
-}
-
-#tmux session explanations
-#http://man.openbsd.org/OpenBSD-current/man1/tmux.1
-#https://coderwall.com/p/omqa2w/tmux-basics
-#https://stackoverflow.com/questions/39523167/how-do-you-send-keys-to-a-specific-window-in-tmux
-
-#tmux -2 new-session -d -s rtorrent-session /usr/bin/rtorrent
-#
-#     -2                                                      [Force tmux to assume the terminal supports 256 colours. This is equivalent to -T 256]
-#        new-session    -s rtorrent-session                   [Creating named session which can be used we want the session to run the background]
-#                    -d                                       [detach session from current terminal]
-#                                           /usr/bin/rtorrent [Programm that startet inside the tmux session]
-#
-#tmux send-keys -t rtorrent-session C-q
-#     send-keys -t                                            [Send a key or keys to a window or client, target panel {-t}]
-#                  rtorrent-session                           [{session}]
-#                                   C-q                       [Send keys]
-#
-#tmux kill-session -t rtorrent-session
-#     kill-session -t                                         [Destroy the given session]
-
-function RTORRENT_TMUX_SERVICE () {
-	arr=("$@")
-	cat > "/etc/systemd/system/rtorrent.service" <<-EOF
-[Unit]
-Description=rtorrent (in tmux)
-Requires=network-online.target
-After=apache2.service
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-User=${arr[1]}
-Group=${arr[3]}
-ExecStart=/usr/bin/tmux -2 new-session -d -s rtorrent-session /usr/bin/rtorrent -n -o import=${arr[4]}/.rtorrent.rc
-ExecStop=/usr/bin/tmux send-keys -t rtorrent-session C-q
-
-[Install]
-WantedBy=default.target
-EOF
 }
 
 #https://www.freedesktop.org/software/systemd/man/systemd.kill.html#KillSignal=
@@ -1505,16 +1463,16 @@ function INSTALL_RUTORRENT () {
 		# dumptorrent plugin
 		if [ "${SELECTED:0:2}" == "v5" ]
 		then
-			apt-get install -y build-essential cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
-			# git only needed when cloning a repository
-			gem install fpm >> $LOG_REDIRECTION 2>&1
-			
-			# Clone the repository
+			# Clone from repository
+			#apt-get install -y build-essential git cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
+			#gem install fpm >> $LOG_REDIRECTION 2>&1
 			#rm -rf /home/$stdin_user/dumptorrent/
 			#git clone https://github.com/tomcdj71/dumptorrent.git >> $LOG_REDIRECTION 2>&1
 			#cd dumptorrent
 			
 			# Download lastest Release
+			apt-get install -y build-essential cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
+			gem install fpm >> $LOG_REDIRECTION 2>&1
 			rm -rf /home/$stdin_user/dumptorrent/
 			latest_dumptorrent=$(wget -q https://api.github.com/repos/tomcdj71/dumptorrent/releases/latest -O - | grep tag_name | cut -d'"' -f4)
 			wget -q https://github.com/tomcdj71/dumptorrent/archive/refs/tags/$latest_dumptorrent.tar.gz -O dumptorrent.tar.gz
@@ -2544,9 +2502,9 @@ function REMOVE_ALL () {
 	dialog --begin $small_x $y --infobox "\nPlease wait while fetching data" $small_height $width
 	
 	activ_rutorrent=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect | cut -d'-' -f2)
-	rtorrent_rc_path=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name .rtorrent.rc)
-	rpc_socket_path=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name rpc.socket | rev | cut -d'/' -f2- | rev)
-	rtorrent_basedir=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name rtorrent-*.log | rev | cut -d'/' -f3- | rev | head -n 1)
+	rtorrent_rc_path=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name .rtorrent.rc 2>> /dev/null)
+	rpc_socket_path=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name rpc.socket 2>> /dev/null | rev | cut -d'/' -f2- | rev)
+	rtorrent_basedir=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name rtorrent-*.log 2>> /dev/null | rev | cut -d'/' -f3- | rev | head -n 1)
 	softlink_link=$(find /home -type l | grep rtorrent)
 	
 	rtorrent_version_installed=$(rtorrent -h | grep "client version" | cut -d' ' -f5 | rev | sed 's/\.//' | rev)
@@ -2613,13 +2571,9 @@ function REMOVE_ALL () {
 	
 	if [[ -e /usr/bin/dumptorrent ]]
 	then
-		apt-get purge -y cmake ruby ruby-dev >> $removelogfile 2>&1
-		if ( apt-cache show dumptorrent | grep -cq "installed" )
-		then
-			apt-get purge -y dumptorrent >> $removelogfile 2>&1
-		else
-			rm -f /usr/bin/dumptorrent /usr/bin/scrapec >> $removelogfile 2>&1
-		fi
+		#https://emaxime.com/2018/how-to-uninstall-all-ruby-gems
+		gem uninstall -aIx >> $removelogfile 2>&1
+		apt-get purge -y cmake ruby ruby-dev dumptorrent >> $removelogfile 2>&1
 	fi
 	
 	apt-get purge -y git libapache2-mod-geoip php$PHP_VERSION-bcmath

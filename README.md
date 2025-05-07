@@ -23,6 +23,10 @@ Now updated since Version 2.2 with a true deamon-mode for rtorrent with a sepera
 rtorrent user, now privileged with folder access rights via group access. There is no way to do a feature update (true deamon-mode) from Version 2.1
 to Version 2.2, needed reinstallation, but ruTorrent updates with the new script works for installations pre Version 2.2 with the updated Version.
 
+Drop support for Debian 9 (Stretch) and ruTorrent 3.8 with Version 3.6
+
+Drop support for rtorrent 0.9.6 and older with Version 3.8
+
 Scripted Installation
 
 ![Scriptet](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/I_Scripted%20Installation.PNG)
@@ -40,6 +44,7 @@ Select our rtorrent user or add a new one
 Choose your rtorrent Version from repository or a release Version direcly from git (a seperate script is added to build it direcly from the Master or other Branches)
 
 ![ruTorrent](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ic_Scripted%20Installation_choose_rTorrent_version.PNG)
+(rtorrent can be changed without reinstallation!)
 
 ![ruTorrent](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ic_Scripted%20Installation_choose_ruTorrent_version.PNG)
 
@@ -66,7 +71,7 @@ Add a user to the WebAuthentification or remove one
 
 Or remove the installation if it doesn't fit your needs
 ![Removeall](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/X_Remove%20complete%20rtorrent%20and%20rutorrent%20installation.PNG)
-(ruTorrent can be updated without reinstallation!)
+(ruTorrent can be changed without reinstallation!)
 
 ## Features ##
 - GUI
@@ -81,7 +86,7 @@ Or remove the installation if it doesn't fit your needs
     - Raspberry Pi OS
   - needs only wget and dialog, pre installation
   - choose a present user or add a new one for rtorrent
-  - script keeps itself actuall (grep users and ruTorrent Version on startup)
+  - script keeps itself actuall (grep users, rtorrent and ruTorrent Version on startup)
   - Web Authentication can de-/activate on will, users can add or remove via menu
   - SSL support, Self Signed or Let's Encrypt certificate
   - Since max certifcate duration is 398 days added the option to renew the certificate on purpose, for Self Signed and Let's Encrypt (https://www.ssl.com/blogs/398-day-browser-limit-for-ssl-tls-certificates-begins-september-1-2020/)
@@ -96,19 +101,21 @@ Or remove the installation if it doesn't fit your needs
   - change rtorrent user retrospektiv
   - add or remove softlink from rtorrent basedir to rtorrent user
 - ruTorrent
-  - ruTorrent can easily updated
+  - ruTorrent can easily updated/changed
   - add python path to ruTorrent `config.php` to support cloudflare (3.9+)
   - all included plugins supported and loaded (except geoip)
   - deactivate deprecated geoip plugin since php-geoip is last shipped with php7.4
+  - integrate geoip2 as replacement for geoip (https://github.com/Micdu70/geoip2-rutorrent)
   - choose to use httprpc in favor of rpc (both works, also simultaneously) for the XMLRPC (https://github.com/Novik/ruTorrent/discussions/2439)
   - did not use deprecated libapache2-mod-scgi (last update 1.13-1.1 02 Jul 2013, https://metadata.ftp-master.debian.org/changelogs//main/s/scgi/scgi_1.13-1.1_changelog)
   - remove Serversignature from Unauthorized HTML redirect from WebAuth (https://www.inmotionhosting.com/support/server/apache/hide-apache-version-and-linux-os/)
   - use localhostmode from ruTorrent (4.0.1+)
-  - integrate geoip2 as replacement for geoip
 - rtorrent
+  - rtorrent can easily updated/changed
+  - choose between rtorrent from distro repository and releases from github or afterwards from github master (seperate script: librtorrent-install-from-git.bash)
   - use of secure open_local instead of open_port from rtorrent with rutorrent (https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC)
   - uses latestest rtorrent.rc direct from rtorrent github (https://github.com/rakshasa/rtorrent/wiki/CONFIG-Template)
-  - uses deamon.mode for rtorrent if possible (0.9.7+)
+  - uses deamon.mode for rtorrent (0.9.7+)
   - remove session_lock from rtorrent session so a restart works without complications 
   - move open_local socket to `/run` and rtorrent basedir to `/srv` (https://ubuntu.com/blog/private-home-directories-for-ubuntu-21-04)
   - exclusiv system user and group for rtorrent benefits higher folder permissions (Script V2.2+)
