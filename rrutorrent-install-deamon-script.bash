@@ -8,7 +8,6 @@ separator=":"
 #switched to logname as standard
 stdin_user=$(logname)
 
-
 #Install Logfile
 logfile=/home/$stdin_user/install.log
 #Remove Logfile
@@ -24,7 +23,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V3.8"
+script_versionumber="V3.9"
 #Fullmenu true,false
 fullmenu=false
 
@@ -137,8 +136,9 @@ IFS='"' read -a VERSIONS <<< "$full"
 function SCRIPT_BASE_INSTALL {
 	DIALOG_CHECK="$(dpkg-query -W -f='${Status}\n' dialog 2>/dev/null | grep -c "ok installed")"
 	WGET_CHECK="$(dpkg-query -W -f='${Status}\n' wget 2>/dev/null | grep -c "ok installed")"
+	OPENSSH_SERVER_CHECK="$(dpkg-query -W -f='${Status}\n' openssh-server 2>/dev/null | grep -c "ok installed")"
 	
-	if [ "$DIALOG_CHECK" -ne 1 ] || [ "$WGET_CHECK" -ne 1 ];
+	if [ "$DIALOG_CHECK" -ne 1 ] || [ "$WGET_CHECK" -ne 1 ] || [ "$OPENSSH_SERVER_CHECK" -ne 1 ]
 	then
 		if [ "$DIALOG_CHECK" -ne 1 ];
 		then
@@ -148,7 +148,11 @@ function SCRIPT_BASE_INSTALL {
 		then
 			base1=wget
 		fi
-		apt-get -y install $base0 $base1 
+		if [ "$OPENSSH_SERVER_CHECK" -ne 1 ];
+		then
+			base2=openssh-server
+		fi
+		apt-get -y install $base0 $base1 $base2
 		#1> /dev/null
 	fi
 }
@@ -170,6 +174,7 @@ function MENU {
 	              "H" "Add/Remove Softlink to/from the rtorrent users homedir"
 	              "G" "Edit rtorrent.rc/Move rtorrent basedir"
 	              "C" "Change rtorrent user"
+	              "B" "Remove unused ruTorrent versions"
 	              "X" "Remove complete rtorrent & ruTorrent installation")
 	
 	if [ -f $logfile ]
@@ -231,6 +236,7 @@ function MENU_OPTIONS () {
 	R)	USE_UNRAR_NONFREE;;
 	H)	SOFTLINK_TO_HOMEDIR;;
 	G)	MOVE_RTORRENT_BASEDIR;;
+	B)	UNUSED_RUTORRENTS;;
 	X)	REMOVE_EVERYTHING;;
 	L)	INSTALLLOG;;
 	M)	REMOVELOG;;
@@ -796,7 +802,7 @@ function MENU_RTORRENT () {
 	# 3 means user hit EXTRA button.
 	# 255 means user hit [Esc] key.
 	case $EXITCODE in
-	0)		UPDATE_RTORRENT;;
+	0)		UPDATE_RTORRENT $RTORRENT_VERSION;;
 	1|255)	;;
 	esac
 	MENU
@@ -808,7 +814,7 @@ function UPDATE_RTORRENT () {
 	
 	apt-get purge -y rtorrent libtorrent* >> $LOG_REDIRECTION 2>&1
 	
-	INSTALL_RTORRENT
+	INSTALL_RTORRENT $1
 	
 	rtorrent_rc_path=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name .rtorrent.rc)
 	
@@ -827,6 +833,8 @@ function UPDATE_RTORRENT () {
 }
 
 function INSTALL_RTORRENT () {
+	RTORRENT_VERSION=$1
+	
 	if [[ $RTORRENT_VERSION == "v$rtorrent_version $reposity_marker" ]]
 	then
 		apt-get -y install rtorrent >> $LOG_REDIRECTION 2>&1
@@ -908,8 +916,11 @@ function RTORRENT () {
 	sed -i '/method.insert = cfg.watch/a method.insert = socket.path,  private|const|string, (cat,"/run/rtorrent/")' ${USER[4]}/.rtorrent.rc
 	sed -i '/trackers.numwant.set/a #trackers.delay_scrape = yes' ${USER[4]}/.rtorrent.rc
 	
-	sed -i '/network.http.ssl_verify_host.set/a #network.rpc.use_xmlrpc.set = true' ${USER[4]}/.rtorrent.rc
-	sed -i '/network.rpc.use_xmlrpc.set/a #network.rpc.use_jsonrpc.set = true' ${USER[4]}/.rtorrent.rc
+	#sed -i '/network.http.ssl_verify_host.set/a #network.rpc.use_xmlrpc.set = true' ${USER[4]}/.rtorrent.rc
+	#sed -i '/network.rpc.use_xmlrpc.set/a #network.rpc.use_jsonrpc.set = true' ${USER[4]}/.rtorrent.rc
+	
+	sed -i '/network.max_open_sockets.set/a #system.files.advise_random.hashing.set = true' ${USER[4]}/.rtorrent.rc
+	sed -i '/system.files.advise_random.hashing.set/a #system.files.advise_random.set = true' ${USER[4]}/.rtorrent.rc
 	
 	#https://github.com/rakshasa/rtorrent/issues/949#issuecomment-572528586
 	sed -i '/system.umask/a session.use_lock.set = no' ${USER[4]}/.rtorrent.rc
@@ -997,7 +1008,8 @@ function MOVE_RTORRENT_BASEDIR () {
 	rtorrent_basedir=$(echo $rtorrent_rc_path | rev | cut -d'/' -f3- | rev)
 	
 	rtorrent_user_name=$(cat /etc/systemd/system/rtorrent.service | grep 'User' | cut -d'=' -f2)
-	rtorrent_user_group=$(groups $rtorrent_user_name | cut -d' ' -f3)
+	#rtorrent_user_group=$(groups $rtorrent_user_name | cut -d' ' -f3)
+	rtorrent_user_group=$(cat /etc/systemd/system/rtorrent.service | grep 'Group' | cut -d'=' -f2)
 	
 	rtorrentuser=${list_of_rtorrent_group_user[@]/"www-data"}
 	rtorrentuser="${rtorrentuser[@]}"
@@ -1397,7 +1409,10 @@ function MENU_RUTORRENT () {
 	# 3 means user hit EXTRA button.
 	# 255 means user hit [Esc] key.
 	case $EXITCODE in
-	0)		INSTALL_RUTORRENT "$SELECTED";;
+	0)		INSTALL_RUTORRENT "$SELECTED"
+			#dialog --title "Done" --stdout --begin $small_x $y --msgbox "\nNew ruTorrent $SELECTED installed and activated" $small_height $width
+			dialog --title "Done" --stdout --begin $small_x $y --sleep 4 --infobox "\nNew ruTorrent $SELECTED installed and activated" $small_height $width
+			;;
 	1|255)	;;
 	esac
 	MENU
@@ -1426,7 +1441,7 @@ function INSTALL_RUTORRENT () {
 		#move ruTorrent errorlog to a folder writeable by www-data
 		sed -i '/log_file/ s|/tmp/errors.log|/var/log/apache2/rutorrent-errors.log|g' /var/www/$SELECTED_CUT/conf/config.php
 		
-		#use localHostedMode (rutorrent 4.0.1+)
+		#use localHostedMode (ruTorrent 4.0.1+)
 		sed -i '/localHostedMode/ s/false/true/' /var/www/$SELECTED_CUT/conf/config.php
 		
 		############## install and configure plugins
@@ -1460,8 +1475,9 @@ function INSTALL_RUTORRENT () {
 			sudo python$python_version_major -m pip install cloudscraper --quiet >> $LOG_REDIRECTION 2>&1
 		fi
 		
-		# dumptorrent plugin
-		if [ "${SELECTED:0:2}" == "v5" ]
+		# dumptorrent plugin available with ruTorrent version v5 installation needed only once and left out if it allready exist
+		#if (( "${SELECTED:1:1}" >= "5" )) && ( ! apt-cache show dumptorrent 2>&1 >>/dev/null | grep -cq "installed" )
+		if (( "${SELECTED:1:1}" >= "5" ))
 		then
 			# Clone from repository
 			#apt-get install -y build-essential git cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
@@ -1531,7 +1547,7 @@ function INSTALL_RUTORRENT () {
 		
 		CREATE_AND_ACTIVATE_CONF $SELECTED_CUT
 		
-		#only for install log needed
+		# only for install log needed
 		echo "rutorrent config.php" 1>> $LOG_REDIRECTION
 		cat /var/www/$SELECTED_CUT/conf/config.php 1>> $LOG_REDIRECTION
 		echo "Apache $SELECTED_CUT.conf vhost" 1>> $LOG_REDIRECTION
@@ -2380,8 +2396,9 @@ function INSTALLATION () {
 	echo -e "XXX\n65\nInstall and configure rtorrent\nXXX"
 	apt-get install -y apt-utils build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl3-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5-dev automake libtool libxmlrpc-core-c3-dev checkinstall 2>/dev/null 1>> $LOG_REDIRECTION
 	#libncurses5
+	
 	#INSTALL_RTORRENT
-	(time INSTALL_RTORRENT) >> $LOG_REDIRECTION 2>&1
+	(time INSTALL_RTORRENT $RTORRENT_VERSION) >> $LOG_REDIRECTION 2>&1
 	(time RTORRENT "${RT_DAEMON[@]}") >> $LOG_REDIRECTION 2>&1
 	
 	PORT_RANGE=$(grep 'port_range.set' ${RC[2]}/rtorrent/.rtorrent.rc | cut -d' ' -f3)
@@ -2459,6 +2476,63 @@ with '\Z5sudo systemctl start|stop|restart rtorrent.service\Zn'.\n\
 	case $EXITCODE in
 	0|1|255)	;;
 	esac
+}
+
+function UNUSED_RUTORRENTS () {
+	CURRENT_CONF=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect)
+	INSTALLED_RUTORRENTS=$(ls /var/www/ | grep "ruTorrent" | grep -v "$CURRENT_CONF")
+	
+	#echo $INSTALLED_RUTORRENTS
+	
+	last='""off'
+	variablenname=$(echo $INSTALLED_RUTORRENTS | sed 's/ /""off"/g')
+	full="$variablenname$last"
+	IFS='"' read -a RU_VERSIONS_INSTALLED <<< "$full"
+	
+	OUTPUT=$(dialog --title "Choose ruTorrent Versions to remove" \
+	--stdout \
+	--begin $x $y \
+	--output-separator $separator \
+	--extra-button \
+	--extra-label "All" \
+	--checklist "Installed versions, active version $CURRENT_CONF is hidden" 20 70 10 "${RU_VERSIONS_INSTALLED[@]}")
+	EXITCODE=$?
+	#echo $EXITCODE
+	#echo $SELECTED
+	# Get exit status
+	# 0 means user hit OK button.
+	# 1 means user hit CANCEL button.
+	# 2 means user hit HELP button.
+	# 3 means user hit EXTRA button.
+	# 255 means user hit [Esc] key.
+	#echo $OUTPUT
+	#remove spaces from String
+	OUTPUT=$(echo $OUTPUT | sed 's/ //g')
+	IFS=$separator read -a SHOWN <<< "$OUTPUT"
+	
+	case $EXITCODE in
+	0)		REMOVE_UNUSED_RUTORRENTS "${SHOWN[@]}";;
+	3)		ALL_INSTALLED_RUTORRENTS=$(echo $INSTALLED_RUTORRENTS | sed 's/ /'"$separator"'/g')
+			IFS=$separator read -a SHOWN <<< "$ALL_INSTALLED_RUTORRENTS"
+			REMOVE_UNUSED_RUTORRENTS "${SHOWN[@]}";;
+	1|255)	;;
+	esac
+	MENU
+}
+
+function REMOVE_UNUSED_RUTORRENTS () {
+	arr=("$@")
+	
+	for i in "${!arr[@]}"
+	do
+		#echo "${arr[i]}"
+		ruT=$(echo ${arr[i]} | cut -d"-" -f2)
+		rm -rf /var/www/ruTorrent-${ruT}
+		rm -f /etc/apache2/sites-available/ruTorrent-${ruT}.conf
+	done
+	
+	#dialog --title "Done" --stdout --begin $small_x $y --msgbox "Unused ruTorrent versions deleted" $small_height $width
+	dialog --title "Done" --stdout --begin $small_x $y --sleep 4 --infobox "Unused ruTorrent versions deleted" $small_height $width
 }
 
 function REMOVE_EVERYTHING () {

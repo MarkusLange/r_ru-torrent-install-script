@@ -1,3 +1,15 @@
+Version 3.9
+* modify dumptorrent installation to install it with ruTorrent
+  versions above and equally 5 not explizit 5
+* add openssh-server to the list of packages that need to be
+  installed since Ubuntu Linux Mint comes without in the 
+  standard installation and this script needed it if you add a
+  seperate user for rtorrent
+* add option to remove unused ruTorrent versions
+* add parameter introduced with rtorrent 0.15.4 to rtorrent.rc
+* adopt changes in the condig template of .rtorrent.rc
+----------------------------------------------------------------
+
 Version 3.8
 * remove last stderr messages from screen when remove
   installation

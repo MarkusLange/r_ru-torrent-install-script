@@ -84,7 +84,7 @@ Or remove the installation if it doesn't fit your needs
 	- LMDE (Linux Mint Debian Edition)
     - Raspbian
     - Raspberry Pi OS
-  - needs only wget and dialog, pre installation
+  - needs only wget, openssh-server and dialog, pre installation
   - choose a present user or add a new one for rtorrent
   - script keeps itself actuall (grep users, rtorrent and ruTorrent Version on startup)
   - Web Authentication can de-/activate on will, users can add or remove via menu
