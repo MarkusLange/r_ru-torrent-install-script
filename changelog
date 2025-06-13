@@ -7,7 +7,7 @@ Version 3.9
   seperate user for rtorrent
 * add option to remove unused ruTorrent versions
 * add parameter introduced with rtorrent 0.15.4 to rtorrent.rc
-* adopt changes in the condig template of .rtorrent.rc
+* adopt changes in the config template of .rtorrent.rc
 ----------------------------------------------------------------
 
 Version 3.8
