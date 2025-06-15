@@ -69,6 +69,9 @@ Add a user to the WebAuthentification or remove one
 ![Addwebuser](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/A_Add%20User%20to%20WebAuth.PNG)
 ![Removewebuser](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/U_Remove%20User%20from%20WebAuth.PNG)
 
+Remove unused ruTorrent installations if needes anymore
+![RemoveruTorrents](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Xa_Remove%20unused%20rutorrent%20installations.PNG)
+
 Or remove the installation if it doesn't fit your needs
 ![Removeall](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/X_Remove%20complete%20rtorrent%20and%20rutorrent%20installation.PNG)
 (ruTorrent can be changed without reinstallation!)
