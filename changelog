@@ -1,3 +1,12 @@
+Version 4.0
+* change libcurl3-openssl-dev to libcurl4-openssl-dev
+* some cosmetic changes with apt-get
+* move dumptorrent from git release to git clone repository
+  back again
+* remove the parameter "--must-staple" from certbot since it's
+  not supported anymore
+
+----------------------------------------------------------------
 Version 3.9
 * modify dumptorrent installation to install it with ruTorrent
   versions above and equally 5 not explizit 5

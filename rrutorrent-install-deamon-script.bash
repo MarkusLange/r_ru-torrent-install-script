@@ -23,7 +23,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V3.9"
+script_versionumber="V4.0"
 #Fullmenu true,false
 fullmenu=false
 
@@ -152,7 +152,7 @@ function SCRIPT_BASE_INSTALL {
 		then
 			base2=openssh-server
 		fi
-		apt-get -y install $base0 $base1 $base2
+		apt-get install -y $base0 $base1 $base2
 		#1> /dev/null
 	fi
 }
@@ -766,11 +766,11 @@ function DEL_USER () {
 
 function SYSTEM_UPDATE {
 	apt-get update 1>> $LOG_REDIRECTION
-	apt-get -y dist-upgrade 1>> $LOG_REDIRECTION
+	apt-get dist-upgrade -y 1>> $LOG_REDIRECTION
 }
 
 function APACHE2 {
-	apt-get -y install openssl apache2 apache2-utils php$PHP_VERSION php$PHP_VERSION-mbstring php$PHP_VERSION-curl php$PHP_VERSION-cli php$PHP_VERSION-xml libapache2-mod-php$PHP_VERSION unzip curl 2>/dev/null 1>> $LOG_REDIRECTION
+	apt-get install -y openssl apache2 apache2-utils php$PHP_VERSION php$PHP_VERSION-mbstring php$PHP_VERSION-curl php$PHP_VERSION-cli php$PHP_VERSION-xml libapache2-mod-php$PHP_VERSION unzip curl 2>/dev/null 1>> $LOG_REDIRECTION
 	
 	#https://www.digitalocean.com/community/tutorials/apache-configuration-error-ah00558-could-not-reliably-determine-the-server-s-fully-qualified-domain-name
 	echo "ServerName 127.0.0.1" >> /etc/apache2/apache2.conf
@@ -837,9 +837,9 @@ function INSTALL_RTORRENT () {
 	
 	if [[ $RTORRENT_VERSION == "v$rtorrent_version $reposity_marker" ]]
 	then
-		apt-get -y install rtorrent >> $LOG_REDIRECTION 2>&1
+		apt-get install -y rtorrent >> $LOG_REDIRECTION 2>&1
 	else
-		#apt-get install build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl3-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5 libncurses5-dev automake libtool libxmlrpc-core-c3-dev dialog checkinstall 1>> $LOG_REDIRECTION
+		#apt-get install -y build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl4-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5 libncurses5-dev automake libtool libxmlrpc-core-c3-dev dialog checkinstall 1>> $LOG_REDIRECTION
 		
 		REPO_URL='https://api.github.com/repos/rakshasa/rtorrent/releases'
 		RESPONSE_LIST=$(wget -q $REPO_URL -O - | grep browser_download | cut -d'"' -f4)
@@ -1377,7 +1377,7 @@ function LET_ENCRYPT_FOR_SSL () {
 	tput cup $(tput lines) 0
 	echo ""
 	
-	certbot --apache --rsa-key-size 4096 --must-staple --hsts --uir --staple-ocsp --strict-permissions --register-unsafely-without-email --agree-tos --no-redirect -d "$DOMAIN_NAME" #2>&1 | dialog --stdout --begin $x $y --progressbox $height $width
+	certbot --apache --rsa-key-size 4096 --hsts --uir --staple-ocsp --strict-permissions --register-unsafely-without-email --agree-tos --no-redirect -d "$DOMAIN_NAME" #2>&1 | dialog --stdout --begin $x $y --progressbox $height $width
 	sed -i 's/31536000/63072000/g' /etc/apache2/sites-available/$TARGET-le-ssl.conf
 	
 	tput civis
@@ -1458,7 +1458,7 @@ function INSTALL_RUTORRENT () {
 		#                         mediainfo
 		#                                   unpack
 		#                                              spectrogram
-		apt-get -y install ffmpeg mediainfo unrar-free sox libsox-fmt-mp3 >> $LOG_REDIRECTION 2>&1
+		apt-get install -y ffmpeg mediainfo unrar-free sox libsox-fmt-mp3 >> $LOG_REDIRECTION 2>&1
 		
 		#_cloudflare
 		#https://unix.stackexchange.com/questions/89913/sed-ignore-line-starting-whitespace-for-match
@@ -1480,23 +1480,23 @@ function INSTALL_RUTORRENT () {
 		if (( "${SELECTED:1:1}" >= "5" ))
 		then
 			# Clone from repository
-			#apt-get install -y build-essential git cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
-			#gem install fpm >> $LOG_REDIRECTION 2>&1
-			#rm -rf /home/$stdin_user/dumptorrent/
-			#git clone https://github.com/tomcdj71/dumptorrent.git >> $LOG_REDIRECTION 2>&1
-			#cd dumptorrent
-			
-			# Download lastest Release
-			apt-get install -y build-essential cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
+			apt-get install -y build-essential git cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
 			gem install fpm >> $LOG_REDIRECTION 2>&1
 			rm -rf /home/$stdin_user/dumptorrent/
-			latest_dumptorrent=$(wget -q https://api.github.com/repos/tomcdj71/dumptorrent/releases/latest -O - | grep tag_name | cut -d'"' -f4)
-			wget -q https://github.com/tomcdj71/dumptorrent/archive/refs/tags/$latest_dumptorrent.tar.gz -O dumptorrent.tar.gz
-			mkdir dumptorrent
-			# https://wiki.ubuntuusers.de/tar/
-			tar xzvf dumptorrent.tar.gz -C dumptorrent --strip-components=1 >> $LOG_REDIRECTION 2>&1
-			rm -f dumptorrent.tar.gz
+			git clone https://github.com/tomcdj71/dumptorrent.git >> $LOG_REDIRECTION 2>&1
 			cd dumptorrent
+			
+			# Download lastest Release
+			#apt-get install -y build-essential cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
+			#gem install fpm >> $LOG_REDIRECTION 2>&1
+			#rm -rf /home/$stdin_user/dumptorrent/
+			#latest_dumptorrent=$(wget -q https://api.github.com/repos/tomcdj71/dumptorrent/releases/latest -O - | grep tag_name | cut -d'"' -f4)
+			#wget -q https://github.com/tomcdj71/dumptorrent/archive/refs/tags/$latest_dumptorrent.tar.gz -O dumptorrent.tar.gz
+			#mkdir dumptorrent
+			# https://wiki.ubuntuusers.de/tar/
+			#tar xzvf dumptorrent.tar.gz -C dumptorrent --strip-components=1 >> $LOG_REDIRECTION 2>&1
+			#rm -f dumptorrent.tar.gz
+			#cd dumptorrent
 			
 			# Build the binaries
 			cmake -B build/ -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Release -S . >> $LOG_REDIRECTION 2>&1
@@ -2394,7 +2394,7 @@ function INSTALLATION () {
 	
 	echo "Install rtorrent" 1>> $LOG_REDIRECTION
 	echo -e "XXX\n65\nInstall and configure rtorrent\nXXX"
-	apt-get install -y apt-utils build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl3-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5-dev automake libtool libxmlrpc-core-c3-dev checkinstall 2>/dev/null 1>> $LOG_REDIRECTION
+	apt-get install -y apt-utils build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl4-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5-dev automake libtool libxmlrpc-core-c3-dev checkinstall 2>/dev/null 1>> $LOG_REDIRECTION
 	#libncurses5
 	
 	#INSTALL_RTORRENT
@@ -2618,7 +2618,7 @@ function REMOVE_ALL () {
 	
 	echo -e "XXX\n50\nRemove rtorrent\nXXX"
 	apt-get purge -y rtorrent libtorrent* >> $removelogfile 2>&1
-	apt-get purge -y apt-utils build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl3-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5-dev automake libtool libxmlrpc-core-c3-dev checkinstall >> $removelogfile 2>&1
+	apt-get purge -y apt-utils build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl4-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5-dev automake libtool libxmlrpc-core-c3-dev checkinstall >> $removelogfile 2>&1
 	#libncurses5
 	
 	echo -e "XXX\n60\nRemove ruTorrent plugins\nXXX"
