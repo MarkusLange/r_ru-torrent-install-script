@@ -5,8 +5,8 @@ Version 4.0
   back again
 * remove the parameter "--must-staple" from certbot since it's
   not supported anymore
-
 ----------------------------------------------------------------
+
 Version 3.9
 * modify dumptorrent installation to install it with ruTorrent
   versions above and equally 5 not explizit 5
