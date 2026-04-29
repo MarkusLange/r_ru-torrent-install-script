@@ -23,7 +23,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V4.0"
+script_versionumber="V4.1"
 #Fullmenu true,false
 fullmenu=false
 
@@ -119,7 +119,22 @@ let system_high=$((low - 1))
 
 #ruTorrents
 #ALL_VERSION=$(wget -q https://api.github.com/repos/Novik/ruTorrent/releases -O - | grep tag_name | cut -d'"' -f4)
-ALL_VERSION=$(wget -q https://api.github.com/repos/Novik/ruTorrent/tags -O - | grep name | cut -d'"' -f4 | grep -v 'rutorrent\|plugins')
+#ALL_VERSION=$(wget -q https://api.github.com/repos/Novik/ruTorrent/tags -O - | grep name | cut -d'"' -f4 | grep -v 'rutorrent\|plugins')
+
+p=0
+while true
+do
+	p=$(($p + 1))
+	parts=$(wget -q https://api.github.com/repos/Novik/ruTorrent/tags?page=$p -O - | grep name | cut -d'"' -f4 | grep -v 'rutorrent\|plugins\|v3.')
+	
+	if [ -z $(echo $parts | cut -d' ' -f1) ]
+	then
+		break
+	else
+		ALL_VERSION="$ALL_VERSION $parts"
+	fi
+done
+
 #remove v4.0 "All Linux Distributions should mark version 4 as "unstable" due to caching issues and use the v4.0.1 hot fix release instead"
 #https://github.com/Novik/ruTorrent/releases/tag/v4.0.1-hotfix
 STABLE_VERSION=$(echo "$ALL_VERSION" | grep -v 'beta\|v4.0-stable')
@@ -172,6 +187,7 @@ function MENU {
 	              "U" "Remove User from WebAuth"
 	              "R" "Move to unrar-nonfree variant"
 	              "H" "Add/Remove Softlink to/from the rtorrent users homedir"
+				  "Y" "Change MaxMind IP Map update intervall"
 	              "G" "Edit rtorrent.rc/Move rtorrent basedir"
 	              "C" "Change rtorrent user"
 	              "B" "Remove unused ruTorrent versions"
@@ -235,6 +251,7 @@ function MENU_OPTIONS () {
 	U)	REMOVE_WEBAUTH_USER;;
 	R)	USE_UNRAR_NONFREE;;
 	H)	SOFTLINK_TO_HOMEDIR;;
+	Y)	MAXMIND_INTERVALL;;
 	G)	MOVE_RTORRENT_BASEDIR;;
 	B)	UNUSED_RUTORRENTS;;
 	X)	REMOVE_EVERYTHING;;
@@ -793,8 +810,14 @@ function MENU_RTORRENT () {
 	RT_VERSIONS[0]="v$rtorrent_version $reposity_marker"
 	RTORRENT_VERSION=$(dialog --title "Choose rTorrent Version" --stdout --begin $x $y --radiolist "rTorrent Versions installed is $installed_rtorrent" $height $width 10 "${RT_VERSIONS[@]}")
 	EXITCODE=$?
+	
+	if [[ "${RT_VERSIONS[0]}" == "$RTORRENT_VERSION" ]]
+	then
+		RTORRENT_VERSION=""repository""
+	fi
+
 	#echo $EXITCODE
-	#echo $RUTORRENT_VERSION
+	#echo $RTORRENT_VERSION
 	# Get exit status
 	# 0 means user hit OK button.
 	# 1 means user hit CANCEL button.
@@ -835,11 +858,11 @@ function UPDATE_RTORRENT () {
 function INSTALL_RTORRENT () {
 	RTORRENT_VERSION=$1
 	
-	if [[ $RTORRENT_VERSION == "v$rtorrent_version $reposity_marker" ]]
+	if [[ $RTORRENT_VERSION == "repository" ]]
 	then
 		apt-get install -y rtorrent >> $LOG_REDIRECTION 2>&1
 	else
-		#apt-get install -y build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl4-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5 libncurses5-dev automake libtool libxmlrpc-core-c3-dev dialog checkinstall 1>> $LOG_REDIRECTION
+		BUILD_DEPENDENCIES_RTORRENT
 		
 		REPO_URL='https://api.github.com/repos/rakshasa/rtorrent/releases'
 		RESPONSE_LIST=$(wget -q $REPO_URL -O - | grep browser_download | cut -d'"' -f4)
@@ -1418,6 +1441,21 @@ function MENU_RUTORRENT () {
 	MENU
 }
 
+#https://unix.stackexchange.com/questions/285924/how-to-compare-a-programs-version-in-a-shell-script
+function COMPARE_NUMBERS () {
+currentver=$1
+requiredver=$2
+
+if [ "$(printf '%s\n' "$requiredver" "$currentver" | sort -V | head -n1)" = "$requiredver" ]
+then
+	#echo "${currentver} is greater than or equal to ${requiredver}"
+	return 0
+else
+	#echo "${currentver} less than ${requiredver}"
+	return 1
+fi
+}
+
 function INSTALL_RUTORRENT () {	
 	if [ -z "$1" ]
 	then
@@ -1426,11 +1464,14 @@ function INSTALL_RUTORRENT () {
 	else
 		SELECTED=$1
 		SELECTED_CUT="ruTorrent-${SELECTED:1}"
+		SELECTED_MAJOR=$(echo ${SELECTED:1} | cut -d. -f1)
+		SELECTED_MINOR=$(echo ${SELECTED:1} | cut -d. -f2)
+		SELECTED_PATCH=$(echo ${SELECTED:1} | cut -d. -f3)
 		
 		############## install ruTorrent
 		wget -q https://github.com/Novik/ruTorrent/archive/refs/tags/$SELECTED.zip -O /var/www/$SELECTED_CUT.zip
 		unzip -qqo /var/www/$SELECTED_CUT.zip -d /var/www/
-		rm /var/www/$SELECTED_CUT.zip	
+		rm /var/www/$SELECTED_CUT.zip
 		
 		############## configure ruTorrent
 		#https://github.com/rakshasa/rtorrent/wiki/RPC-Setup-XMLRPC
@@ -1442,13 +1483,12 @@ function INSTALL_RUTORRENT () {
 		sed -i '/log_file/ s|/tmp/errors.log|/var/log/apache2/rutorrent-errors.log|g' /var/www/$SELECTED_CUT/conf/config.php
 		
 		#use localHostedMode (ruTorrent 4.0.1+)
-		sed -i '/localHostedMode/ s/false/true/' /var/www/$SELECTED_CUT/conf/config.php
+		if COMPARE_NUMBERS $SELECTED "v4.0.1"
+		then
+			sed -i '/localHostedMode/ s/false/true/' /var/www/$SELECTED_CUT/conf/config.php
+		fi
 		
 		############## install and configure plugins
-		# deactivate php-geoip outdated since php7.4
-		sed -i '$a[geoip]' /var/www/$SELECTED_CUT/conf/plugins.ini
-		sed -i '$aenabled = no' /var/www/$SELECTED_CUT/conf/plugins.ini
-		
 		#httprpc vs rpc, only one is nessesary choose the better: https://github.com/Novik/ruTorrent/discussions/2439
 		sed -i '$a[rpc]' /var/www/$SELECTED_CUT/conf/plugins.ini
 		sed -i '$aenabled = no' /var/www/$SELECTED_CUT/conf/plugins.ini
@@ -1477,7 +1517,7 @@ function INSTALL_RUTORRENT () {
 		
 		# dumptorrent plugin available with ruTorrent version v5 installation needed only once and left out if it allready exist
 		#if (( "${SELECTED:1:1}" >= "5" )) && ( ! apt-cache show dumptorrent 2>&1 >>/dev/null | grep -cq "installed" )
-		if (( "${SELECTED:1:1}" >= "5" ))
+		if (( "$SELECTED_MAJOR" >= "5" ))
 		then
 			# Clone from repository
 			apt-get install -y build-essential git cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
@@ -1537,10 +1577,76 @@ function INSTALL_RUTORRENT () {
 			rm -rf /home/$stdin_user/dumptorrent/
 		fi
 		
-		# geoip2 plugin
+		#geoip/geoip2 plugin
 		apt-get install -y git libapache2-mod-geoip php$PHP_VERSION-bcmath >> $LOG_REDIRECTION 2>&1
-		git clone --depth=1 https://github.com/MarkusLange/geoip2-rutorrent.git /var/www/$SELECTED_CUT/plugins/geoip2 >> $LOG_REDIRECTION 2>&1
-		rm -rf /var/www/$SELECTED_CUT/plugins/geoip2/.git
+		
+		if COMPARE_NUMBERS $SELECTED "v5.3.1"
+		then
+			:
+		else
+			#deactivate php-geoip outdated since php7.4
+			sed -i '$a[geoip]' /var/www/$SELECTED_CUT/conf/plugins.ini
+			sed -i '$aenabled = no' /var/www/$SELECTED_CUT/conf/plugins.ini
+			
+			#geoip2 plugin
+			#apt-get install -y git libapache2-mod-geoip php$PHP_VERSION-bcmath >> $LOG_REDIRECTION 2>&1
+			git clone --depth=1 https://github.com/MarkusLange/geoip2-rutorrent.git /var/www/$SELECTED_CUT/plugins/geoip2 >> $LOG_REDIRECTION 2>&1
+			rm -rf /var/www/$SELECTED_CUT/plugins/geoip2/.git
+		fi
+		
+		mkdir -p /usr/share/GeoIP
+		chmod 755 /usr/share/GeoIP
+		
+		cat > "/usr/local/bin/geoip_update.bash" <<-EOF
+#!/bin/bash
+
+rm -f /usr/share/GeoIP/*.mmdb
+
+wget -q https://github.com/snowinszu/GeoLite.mmdb/raw/download/GeoLite2-ASN.mmdb --directory-prefix=/usr/share/GeoIP/
+wget -q https://github.com/snowinszu/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb --directory-prefix=/usr/share/GeoIP/
+wget -q https://github.com/snowinszu/GeoLite.mmdb/raw/download/GeoLite2-Country.mmdb --directory-prefix=/usr/share/GeoIP/
+
+echo "Updated on $(date)" > "/usr/share/GeoIP/last_update.log"
+EOF
+		
+		chmod +x /usr/local/bin/geoip_update.bash
+		
+		cat > "/etc/systemd/system/geoip.service" <<-EOF
+[Unit]
+Description=Geip update scheduler
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/geoip_update.bash
+
+[Install]
+WantedBy=default.target
+EOF
+
+		cat > "/etc/systemd/system/geoip.timer" <<-EOF
+[Unit]
+Description=Schedule geoip update every 2 days
+RefuseManualStart=no  # Allow manual starts
+RefuseManualStop=no   # Allow manual stops
+
+[Timer]
+#Execute job if it missed a run due to machine being off
+Persistent=true
+#Run 120 seconds after boot for the first time
+OnBootSec=120
+#Run every 2 days thereafter
+OnCalendar=*-*-1/2 00:00:00
+#File describing job to execute
+Unit=geoip.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
+		systemctl daemon-reload
+		systemctl enable geoip.service
+		systemctl enable geoip.timer
+		systemctl start geoip.timer
 		
 		chown -R www-data:www-data /var/www/$SELECTED_CUT
 		chmod -R 775 /var/www/$SELECTED_CUT
@@ -1927,6 +2033,64 @@ function TOGGLE_SOFTLINK () {
 	fi
 }
 
+function MAXMIND_INTERVALL {
+	#        <tag1><item1><status1><tag2><item2><status2>
+	INTERVALLS=("2" " 2 days (default)" "OFF" "5" " 5 days" "OFF" "7" " 7 days (weekly)" "OFF" "14" "14 days (every two weeks)" "OFF")
+	
+	ACTIVE=$(grep "OnCalendar" /etc/systemd/system/geoip.timer | cut -d"/" -f2 | cut -d" " -f1)
+	echo $ACTIVE
+	
+	case $ACTIVE in
+	2)INTERVALLS[2]="ON";;
+	5)INTERVALLS[5]="ON";;
+	7)INTERVALLS[8]="ON";;
+	14)INTERVALLS[11]="ON";;
+	esac
+
+	SELECTED=$(dialog \
+	--title "Change MaxMind Map update intervall" \
+	--stdout \
+	--begin $x $y \
+	--no-tags \
+	--colors \
+	--default-item "$ACTIVE" \
+	--radiolist "MaxMind Map update intervall status (*)" $height $width 2 "${INTERVALLS[@]}")
+	EXITCODE=$?
+	#echo "$SELECTED"
+	# Get exit status
+	# 0 means user hit OK button.
+	# 1 means user hit CANCEL button.
+	# 2 means user hit HELP button.
+	# 3 means user hit EXTRA button.
+	# 255 means user hit [Esc] key.
+	case $EXITCODE in
+	0)      CHANGE_MAXMIND_INTERVALL $ACTIVE $SELECTED;;
+	1|255)  ;;
+	esac
+	MENU
+}
+
+function CHANGE_MAXMIND_INTERVALL () {
+	ACTIVE=$1
+	SELECTED=$2
+	
+	if [[ $ACTIVE == $SELECTED ]]
+	then
+		:
+	else
+		systemctl disable geoip.timer 2>> $removelogfile
+		systemctl stop geoip.timer 1>> $removelogfile
+		
+		sed -i '/OnCalendar/ s|'"$ACTIVE"'|'"$SELECTED"'|g' /etc/systemd/system/geoip.timer
+		sed -i '/Description/ s|'"$ACTIVE"'|'"$SELECTED"'|g' /etc/systemd/system/geoip.timer
+		sed -i '/#Run every/ s|'"$ACTIVE"'|'"$SELECTED"'|g' /etc/systemd/system/geoip.timer
+		
+		systemctl daemon-reload 1>> $removelogfile
+		systemctl enable geoip.timer 2>> $removelogfile
+		systemctl start geoip.timer
+	fi
+}
+
 function SCRIPTED_INSTALL () {
 	dialog --title "Scripted Installation" --stdout --begin $x $y --colors --yesno "\
 The scripted installation ask you some questions about the\n\
@@ -2244,7 +2408,11 @@ rtorrent folder stucture:\n
 	RT_VERSIONS[2]="ON"
 	RTORRENT_VERSION=$(dialog --title "Choose rTorrent Version" --stdout --begin $x $y --radiolist "rTorrent Versions" $height $width 10 "${RT_VERSIONS[@]}")
 	#echo $EXITCODE
-	#echo $RUTORRENT_VERSION
+	#echo $RTORRENT_VERSION
+	if [[ "${RT_VERSIONS[0]}" == "$RTORRENT_VERSION" ]]
+	then
+		RTORRENT_VERSION="repository"
+	fi
 	# Get exit status
 	# 0 means user hit OK button.
 	# 1 means user hit CANCEL button.
@@ -2286,7 +2454,7 @@ function SUM () {
 		fi
 	fi
 	
-	if [[ $RTORRENT_VERSION == "v$rtorrent_version $reposity_marker" ]]
+	if [[ $RTORRENT_VERSION == "repository" ]]
 	then
 		RTORRENT_VERSION_CHOOSE=$rtorrent_version
 		LIBTORRENT_VERSION_CHOOSE=$libtorrent_version
@@ -2335,6 +2503,11 @@ The permissons of the rtorrent Basedir will granted to user \Z4${USER[1]}\Z0\n\
 	0)		INSTALLATION;;
 	1|255)	;;
 	esac
+}
+
+function BUILD_DEPENDENCIES_RTORRENT {
+	apt-get install -y apt-utils build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl4-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5-dev automake libtool libxmlrpc-core-c3-dev checkinstall 2>/dev/null 1>> $LOG_REDIRECTION
+	#libncurses5
 }
 
 function INSTALLATION () {
@@ -2394,8 +2567,7 @@ function INSTALLATION () {
 	
 	echo "Install rtorrent" 1>> $LOG_REDIRECTION
 	echo -e "XXX\n65\nInstall and configure rtorrent\nXXX"
-	apt-get install -y apt-utils build-essential libsigc++-2.0-dev pkg-config comerr-dev libcurl4-openssl-dev libidn11-dev libkrb5-dev libssl-dev zlib1g-dev libncurses5-dev automake libtool libxmlrpc-core-c3-dev checkinstall 2>/dev/null 1>> $LOG_REDIRECTION
-	#libncurses5
+	BUILD_DEPENDENCIES_RTORRENT
 	
 	#INSTALL_RTORRENT
 	(time INSTALL_RTORRENT $RTORRENT_VERSION) >> $LOG_REDIRECTION 2>&1

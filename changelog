@@ -1,3 +1,18 @@
+Version 4.1
+* bring back the whole rutorrent list, since the list of tags
+  are more pages long all after page 1 was lost now you an see
+  all versions down to v3.8 again (v3.x hidden due dropping
+  support of v3.8 with Version 3.6)
+* add a service for an automatic update of the mmdb files from
+  MaxMind, default renew every 2 days
+* add option to change the renew intervals of the MaxMind
+  IP Map
+* use the included rewritten geoip plugin if rutorrent version
+  is v5.3.1 or above
+* fix bug in the installation the script does not use the
+  repository version if choosen
+----------------------------------------------------------------
+
 Version 4.0
 * change libcurl3-openssl-dev to libcurl4-openssl-dev
 * some cosmetic changes with apt-get
