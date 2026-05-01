@@ -1,3 +1,17 @@
+Version 4.2
+* fix bug in script, newer libtorrent versions are not shown
+  correct in the install summary when you choose the repository
+* fix bug in script, logdirection is wrong when changing 
+  MaxMind IP Map Intervall
+* make MaxMind IP Map Intervall part of the Install Script
+* fix bug, let geoip.service run directly after creation so the
+  IP Maps are downloaded instant
+* adopt the MaxMind files and services to the removal script
+* change the color green to blue from "Installation Complete"
+  window
+* remove some terminal messages
+----------------------------------------------------------------
+
 Version 4.1
 * bring back the whole rutorrent list, since the list of tags
   are more pages long all after page 1 was lost now you an see

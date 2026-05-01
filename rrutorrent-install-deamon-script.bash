@@ -23,7 +23,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V4.1"
+script_versionumber="V4.2"
 #Fullmenu true,false
 fullmenu=false
 
@@ -84,7 +84,13 @@ fi
 #rtorrent_version=$(apt-cache policy rtorrent | grep -A1 "Version table:" | tail -1 | cut -c 6- | cut -d' ' -f1)
 #rtorrent_version_micro=$(echo "$rtorrent_version" | cut -d'-' -f1 | cut -d'.' -f3)
 rtorrent_version=$(apt-cache policy rtorrent | grep -m 1 "500" | tail -1 | cut -c 6- | cut -d' ' -f1 | cut -d'-' -f1)
-libtorrent_version=$(apt-cache policy libtorrent?? | head -3 | tail -1 | cut -d' ' -f4)
+
+libtorrent_version=$(apt-cache policy libtorrent?? | head -3 | tail -1 | cut -d' ' -f4 | cut -d'-' -f1)
+if [ "$libtorrent_version" == "(none)" ]
+then
+	libtorrent_version=$(apt-cache policy libtorrent????? | head -3 | tail -1 | cut -d' ' -f4 | cut -d'-' -f1)
+fi
+
 RTORRENT_VERSIONS=$(wget -q https://api.github.com/repos/rakshasa/rtorrent/releases -O - | grep tag_name | grep -v '0.9.7\|0.15.2' | cut -d'"' -f4)
 
 RTORRENT_LIST="v$rtorrent_version $RTORRENT_VERSIONS"
@@ -1646,6 +1652,7 @@ EOF
 		systemctl daemon-reload
 		systemctl enable geoip.service
 		systemctl enable geoip.timer
+		systemctl start geoip.service
 		systemctl start geoip.timer
 		
 		chown -R www-data:www-data /var/www/$SELECTED_CUT
@@ -2078,15 +2085,15 @@ function CHANGE_MAXMIND_INTERVALL () {
 	then
 		:
 	else
-		systemctl disable geoip.timer 2>> $removelogfile
-		systemctl stop geoip.timer 1>> $removelogfile
+		systemctl disable geoip.timer 2>> $LOG_REDIRECTION
+		systemctl stop geoip.timer 1>> $LOG_REDIRECTION
 		
 		sed -i '/OnCalendar/ s|'"$ACTIVE"'|'"$SELECTED"'|g' /etc/systemd/system/geoip.timer
 		sed -i '/Description/ s|'"$ACTIVE"'|'"$SELECTED"'|g' /etc/systemd/system/geoip.timer
 		sed -i '/#Run every/ s|'"$ACTIVE"'|'"$SELECTED"'|g' /etc/systemd/system/geoip.timer
 		
-		systemctl daemon-reload 1>> $removelogfile
-		systemctl enable geoip.timer 2>> $removelogfile
+		systemctl daemon-reload 1>> $LOG_REDIRECTION
+		systemctl enable geoip.timer 2>> $LOG_REDIRECTION
 		systemctl start geoip.timer
 	fi
 }
@@ -2436,8 +2443,34 @@ rtorrent folder stucture:\n
 	# 3 means user hit EXTRA button.
 	# 255 means user hit [Esc] key.
 	case $EXITCODE in
-	0)		SUM;;
-	1|255)	;;
+	0)		;;
+	1|255)	MENU;;
+	esac
+	
+	#        <tag1><item1><status1><tag2><item2><status2>
+	INTERVALLS=("2" " 2 days (default)" "ON" "5" " 5 days" "OFF" "7" " 7 days (weekly)" "OFF" "14" "14 days (every two weeks)" "OFF")
+	
+	ACTIVE="2"
+
+	SELECTED_MAXMIND_INTERVALL=$(dialog \
+	--title "Change MaxMind Map update intervall" \
+	--stdout \
+	--begin $x $y \
+	--no-tags \
+	--colors \
+	--default-item "2" \
+	--radiolist "MaxMind Map update intervall status (*)" $height $width 2 "${INTERVALLS[@]}")
+	EXITCODE=$?
+	#echo "$SELECTED_MAXMIND_INTERVALL"
+	# Get exit status
+	# 0 means user hit OK button.
+	# 1 means user hit CANCEL button.
+	# 2 means user hit HELP button.
+	# 3 means user hit EXTRA button.
+	# 255 means user hit [Esc] key.
+	case $EXITCODE in
+	0)      SUM;;
+	1|255)  ;;
 	esac
 }
 
@@ -2484,6 +2517,7 @@ Random Listening port              \Z4${RC[1]}\Z0\n\
 \n\
 ruTorrent:\n\
 ruTorrent Version                  \Z4$RUTORRENT_VERSION\Z0\n\
+MaxMind IP Map Update Intervall:   \Z4$SELECTED_MAXMIND_INTERVALL\Z0 Days\n\
 \n\
 This Script will install rtorrent and ruTorrent with this\n\
 configuration, rtorrent set all folders within this installation.\n\
@@ -2595,6 +2629,8 @@ function INSTALLATION () {
 	echo -e "XXX\n70\nInstall and configure rutorrent\nXXX"
 	(time INSTALL_RUTORRENT $RUTORRENT_VERSION) >> $LOG_REDIRECTION 2>&1
 	
+	CHANGE_MAXMIND_INTERVALL "2" $SELECTED_MAXMIND_INTERVALL
+	
 	#add rtorrent_daemon_group to www-data
 	sudo usermod -a -G $rtorrent_daemon_group www-data
 	sudo systemctl restart apache2.service
@@ -2612,30 +2648,30 @@ function INSTALLATION () {
 }
 
 function INSTALL_COMPLETE {
-	external_ip=$(wget -O - -q ipv4.icanhazip.com)
+	external_ip=$(wget -O - -q ipv4.icanhazip.com 2>/dev/null)
 	internal_ip=$(hostname -I | cut -d' ' -f1 | sed 's/ //g')
 	BASEDIR=${RC[2]}
 	
 	dialog --title "Installation Completed" --stdout --begin $x $y --colors --msgbox "\
-\Z2Installation is completed.\Zn\n\
+\Z4Installation is completed.\Zn\n\
 \n\
 The actual Apache2 vhost file has been disabled and replaced\n\
 with a new one. If you were using it, enable the default again\n\
 beside the ruTorrent vhost file.\n\
 \n\
-Your downloads folder is in \Z2$BASEDIR/rtorrent/download\Z0\n\
-Sessions data is in \Z2$BASEDIR/rtorrent/.session\Zn\n\
-rtorrent's configuration file is in \Z2$BASEDIR/rtorrent/.rtorrent.rc\Zn\n\
+Your downloads folder is in \Z4$BASEDIR/rtorrent/download\Z0\n\
+Sessions data is in \Z4$BASEDIR/rtorrent/.session\Zn\n\
+rtorrent's configuration file is in \Z4$BASEDIR/rtorrent/.rtorrent.rc\Zn\n\
 \n\
 If you want to change settings for rtorrent, such as download\n\
 folder, etc., you need to edit the '.rtorrent.rc' file.\n\
-E.g. 'nano \Z2$BASEDIR/rtorrent/.rtorrent.rc\Zn'\n\
+E.g. 'nano \Z4$BASEDIR/rtorrent/.rtorrent.rc\Zn'\n\
 \n\
 rtorrent can be started|stopped|restarted without rebooting\n\
 with '\Z5sudo systemctl start|stop|restart rtorrent.service\Zn'.\n\
 \n\
-\Z2LOCAL IP:\Z0    http://$internal_ip/\Zn\n\
-\Z2EXTERNAL IP:\Z0 http://$external_ip/\Zn\n\
+\Z4LOCAL IP:\Z0    http://$internal_ip/\Zn\n\
+\Z4EXTERNAL IP:\Z0 http://$external_ip/\Zn\n\
 "\
 	$height $width
 	EXITCODE=$?
@@ -2822,7 +2858,21 @@ function REMOVE_ALL () {
 		apt-get purge -y cmake ruby ruby-dev dumptorrent >> $removelogfile 2>&1
 	fi
 	
-	apt-get purge -y git libapache2-mod-geoip php$PHP_VERSION-bcmath
+	apt-get purge -y git libapache2-mod-geoip php$PHP_VERSION-bcmath >> $removelogfile 2>&1
+	
+	systemctl stop geoip.timer 1>> $removelogfile	
+	systemctl stop geoip.service 1>> $removelogfile
+	systemctl disable geoip.timer 2>> $removelogfile
+	systemctl disable geoip.service 2>> $removelogfile
+	systemctl daemon-reload 1>> $removelogfile
+	
+	if [ -f /usr/local/bin/geoip_update.bash ]
+	then
+		rm -fR /usr/share/GeoIP >> $removelogfile 2>&1
+		rm -f /usr/local/bin/geoip_update.bash >> $removelogfile 2>&1
+		rm -f /etc/systemd/system/geoip.service >> $removelogfile 2>&1
+		rm -f /etc/systemd/system/geoip.timer >> $removelogfile 2>&1
+	fi
 	
 	echo -e "XXX\n70\nClean system (apt autoremove)\nXXX"
 	apt-get clean -y >> $removelogfile 2>&1
