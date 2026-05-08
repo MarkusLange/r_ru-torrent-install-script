@@ -23,7 +23,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V4.2"
+script_versionumber="V4.3"
 #Fullmenu true,false
 fullmenu=false
 
@@ -193,7 +193,7 @@ function MENU {
 	              "U" "Remove User from WebAuth"
 	              "R" "Move to unrar-nonfree variant"
 	              "H" "Add/Remove Softlink to/from the rtorrent users homedir"
-				  "Y" "Change MaxMind IP Map update intervall"
+	              "Y" "Change MaxMind IP Map update intervall"
 	              "G" "Edit rtorrent.rc/Move rtorrent basedir"
 	              "C" "Change rtorrent user"
 	              "B" "Remove unused ruTorrent versions"
@@ -202,6 +202,7 @@ function MENU {
 	if [ -f $logfile ]
 	then
 		menu_options+=("L" "Show Installation log")
+		menu_options+=("D" "System Installed Information")
 	fi
 	
 	if [ -f $removelogfile ]
@@ -271,6 +272,7 @@ function MENU_OPTIONS () {
 	Z)	INSTALL_COMPLETE;;
 	N)	SCRIPT;;
 	C)	SELECT_USER;;
+	D)	INSTALLED_INFORMATION;;
 	esac
 }
 
@@ -366,7 +368,7 @@ function LICENSE {
 \n\
  THE BEER-WARE LICENSE (Revision 42)©:\n\
 \n\
- \Z2I\Z0 wrote this script. As long as you retain this notice you\n\
+ \Z4I\Z0 wrote this script. As long as you retain this notice you\n\
  can do whatever you want with this stuff. If we meet some day,\n\
  and you think this stuff is worth it, you can buy me a beer\n\
  in return.\n\
@@ -844,6 +846,7 @@ function UPDATE_RTORRENT () {
 	apt-get purge -y rtorrent libtorrent* >> $LOG_REDIRECTION 2>&1
 	
 	INSTALL_RTORRENT $1
+	#(time INSTALL_RTORRENT $1)
 	
 	rtorrent_rc_path=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name .rtorrent.rc)
 	
@@ -892,8 +895,16 @@ function INSTALL_RTORRENT () {
 		#CPU Cores: The make option -j$(nproc) will utilize all available cpu cores.
 		#https://stackoverflow.com/questions/4975127/why-isnt-mkdir-p-working-right-in-a-script-called-by-checkinstall
 		#https://jasonwryan.com/blog/2011/11/29/rtorrent/
+		
+		#N=$(nproc)
+		case $(nproc) in
+		1)	N=1;;
+		*)	N=$(($(nproc)-1));;
+		esac
+		
 		./configure --prefix=/usr/ 2>&1 | dialog --colors --begin $x $y --progressbox "libtorrent: tar, \Z1configure,\Z0 make, make install" $height $width
-		make -j$(nproc) 2>&1 | dialog --colors --begin $x $y --progressbox "libtorrent: tar, configure, \Z1make,\Z0 make install" $height $width
+		#make -j$(nproc) 2>&1 | dialog --colors --begin $x $y --progressbox "libtorrent: tar, configure, \Z1make,\Z0 make install" $height $width
+		make -j$N 2>&1 | dialog --colors --begin $x $y --progressbox "libtorrent: tar, configure, \Z1make,\Z0 make install" $height $width
 		checkinstall -D -y --fstrans=no 2>&1 | dialog --colors --begin $x $y --progressbox "libtorrent: tar, configure, make, \Z1make install\Z0" $height $width
 		
 		cd /home/$stdin_user/
@@ -910,7 +921,8 @@ function INSTALL_RTORRENT () {
 			./configure --with-xmlrpc-c --prefix=/usr/ --libdir=/usr/lib 2>&1 | dialog --colors --begin $x $y --progressbox "rtorrent: tar, \Z1configure,\Z0 make, make install" $height $width
 		fi
 		
-		make -j$(nproc) 2>&1 | dialog --colors --begin $x $y --progressbox "rtorrent: tar, configure, \Z1make,\Z0 make install" $height $width
+		#make -j$(nproc) 2>&1 | dialog --colors --begin $x $y --progressbox "rtorrent: tar, configure, \Z1make,\Z0 make install" $height $width
+		make -j$N 2>&1 | dialog --colors --begin $x $y --progressbox "rtorrent: tar, configure, \Z1make,\Z0 make install" $height $width
 		checkinstall -D -y --fstrans=no 2>&1 | dialog --colors --begin $x $y --progressbox "rtorrent: tar, configure, make, \Z1make install\Z0" $height $width
 		ldconfig
 		
@@ -1612,7 +1624,7 @@ wget -q https://github.com/snowinszu/GeoLite.mmdb/raw/download/GeoLite2-ASN.mmdb
 wget -q https://github.com/snowinszu/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb --directory-prefix=/usr/share/GeoIP/
 wget -q https://github.com/snowinszu/GeoLite.mmdb/raw/download/GeoLite2-Country.mmdb --directory-prefix=/usr/share/GeoIP/
 
-echo "Updated on $(date)" > "/usr/share/GeoIP/last_update.log"
+echo "Updated on \$(date '+%a %Y-%m-%d %T %Z')" > "/usr/share/GeoIP/last_update.log"
 EOF
 		
 		chmod +x /usr/local/bin/geoip_update.bash
@@ -2950,6 +2962,74 @@ The uninstallation is logged in the remove.log"\
 	0|1|255)	;;
 	3)			SHOW_REMOVELOG;;
 	esac
+}
+
+function INSTALLED_INFORMATION {
+	rtorrent_active=$(rtorrent -h | head -n 1 | cut -d' ' -f5 | cut -d'.' -f1-3)
+	rtorrent_user_name=$(cat /etc/systemd/system/rtorrent.service | grep 'User' | cut -d'=' -f2)
+	rtorrent_user_group=$(groups $rtorrent_user_name | cut -d' ' -f3)
+	user_of_rtorrent_group=$(grep $rtorrent_user_group /etc/group | cut -d':' -f4)
+	IFS=',' read -a list_of_rtorrent_group_user <<< "$user_of_rtorrent_group"
+	
+	rtorrentuser=${list_of_rtorrent_group_user[@]/"www-data"}
+	rtorrentuser="${rtorrentuser[@]}"
+	#remove space from String
+	rtorrentuser=$(echo $rtorrentuser | sed 's/ //g')
+	
+	location=$(cat /etc/systemd/system/rtorrent.service | grep "ExecStart" | cut -d'=' -f3 | cut -d'.' -f1)
+	status=$(ls -lrt /home/$rtorrentuser | grep "rtorrent" | grep -c "^l")
+	
+	if [ $status == "1" ]
+	then
+		softlink="/home/$rtorrentuser/rtorrent"
+	else
+		softlink="inactive"
+	fi
+	
+	rtorrent_basedir=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name rtorrent-*.log 2>> /dev/null | rev | cut -d'/' -f3- | rev | head -n 1)
+	
+	activ_rutorrent=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect | cut -d'-' -f2)
+	maxmind_update_intervall=$(grep "OnCalendar" /etc/systemd/system/geoip.timer | cut -d"/" -f2 | cut -d" " -f1)
+	last_update_intervall=$(cat /usr/share/GeoIP/last_update.log | cut -d' ' -f3-)
+	next_update_intervall=$(systemctl list-timers | grep geoip | cut -d" " -f-5)
+	
+	unrar_variant=$(dpkg -l | grep ^ii | awk '{print $2}' | grep "unrar")
+	
+	dialog \
+	--backtitle "Information about the installed system" \
+	--title "Installed System Information" \
+	--stdout \
+	--begin $x $y \
+	--colors \
+	--msgbox "\
+rtorrent:\n\
+   Version:                  \Z4$rtorrent_active\Z0\n\
+   Daemon User:              \Z4$rtorrent_user_name\Z0\n\
+   Daemon Group:             \Z4$rtorrent_user_group\Z0\n\
+   Group Members:            \Z4$user_of_rtorrent_group\Z0\n\
+   Basedir Path:             \Z4$rtorrent_basedir\Z0\n\
+   Softlink:                 \Z4$softlink\Z0\n\
+\n\
+rutorrent:\n\
+   Active Version:           \Z4$activ_rutorrent\Z0\n\
+   MaxMind Update Interval:  \Z4$maxmind_update_intervall\Z0 Days\n\
+   Last Update:              \Z4$last_update_intervall\Z0\n\
+   Next Update:              \Z4$next_update_intervall\Z0\n\
+\n\
+unrar:\n\
+   Variant:                  \Z4$unrar_variant\Z0"\
+	$height $width
+	EXITCODE=$?
+	# Get exit status
+	# 0 means user hit OK button.
+	# 1 means user hit CANCEL button.
+	# 2 means user hit HELP button.
+	# 3 means user hit EXTRA button.
+	# 255 means user hit [Esc] key.
+	case $EXITCODE in
+	0|1|255)   ;;
+	esac
+	MENU
 }
 
 function SHOW_REMOVELOG {

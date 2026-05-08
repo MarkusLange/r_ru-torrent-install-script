@@ -30,13 +30,10 @@ Drop support for rtorrent 0.9.6 and older with Version 3.8
 Use integrated rewritten geoip plugin after ruTorrent 5.3.1
 
 Scripted Installation
-
 ![Scriptet](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/I_Scripted%20Installation.PNG)
-
 Configure your Server, select your favorit ruTorrent version and other things
 
 Select our rtorrent user or add a new one
-
 ![Select User](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ia_Scripted%20Installation_select_user.PNG)
 
 ![Select RTorrent User](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ia_Scripted%20Installation_select_rtorrent_user.PNG)
@@ -44,30 +41,24 @@ Select our rtorrent user or add a new one
 ![rotrrent.rc](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ib_Scripted%20Installation_edit_rtorrent.PNG)
 
 Choose your rtorrent Version from repository or a release Version direcly from git (a seperate script is added to build it direcly from the Master or other Branches, librtorrent-install-from-git.bash, use only if you know what you are doing)
-
 ![ruTorrent](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ic_Scripted%20Installation_choose_rTorrent_version.PNG)
 (rtorrent can be changed without reinstallation!)
 
 ![ruTorrent](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ic_Scripted%20Installation_choose_ruTorrent_version.PNG)
 
 Review the Installation Summary, and install everthing if it fits, or arbort it, without making any system changes at all
-
 ![Scriptet Summery](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Id_Scripted%20Installation_summary.PNG)
 
 Installation Completed
-
 ![Scriptet Complete](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ie_Scripted%20Installation_complete.PNG)
 
 Secure your communication with a SSL Certificate
-
 ![SSL](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/S_Enable%20Renew%20SSL%20for%20VHost.PNG)
 
 Or add WebAuthentification if you want to your VHost
-
 ![Webauthentification](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/W_Enable%20Disable%20WebAuth.PNG)
 
 Add a user to the WebAuthentification or remove one 
-
 ![Addwebuser](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/A_Add%20User%20to%20WebAuth.PNG)
 ![Removewebuser](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/U_Remove%20User%20from%20WebAuth.PNG)
 
@@ -138,4 +129,4 @@ Or remove the installation if it doesn't fit your needs
 - explain the benefits
 - ~~add links as knowledgebase for everyone~~
 - table of tested Debian based Linux systems
-- add window that shows the local installation with all information
+- ~~add window that shows the local installation with all information~~

@@ -1,3 +1,13 @@
+Version 4.3
+* reduce used cores when "make" libtorrent and rtorrent by one,
+  keeping the system responsive during compilation.
+* change the color in the license window from green to blue
+* fix bug in geoip_update.bash time is always the same
+* change timeformat in last_update.log
+* add System Installed Information so there is a rough overview
+  of the actuall installation
+----------------------------------------------------------------
+
 Version 4.2
 * fix bug in script, newer libtorrent versions are not shown
   correct in the install summary when you choose the repository
