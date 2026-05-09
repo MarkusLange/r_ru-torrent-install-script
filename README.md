@@ -45,6 +45,7 @@ Choose your rtorrent Version from repository or a release Version direcly from g
 (rtorrent can be changed without reinstallation!)
 
 ![ruTorrent](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Ic_Scripted%20Installation_choose_ruTorrent_version.PNG)
+(ruTorrent can be changed without reinstallation!)
 
 Review the Installation Summary, and install everthing if it fits, or arbort it, without making any system changes at all
 ![Scriptet Summery](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/Id_Scripted%20Installation_summary.PNG)
@@ -67,7 +68,9 @@ Remove unused ruTorrent installations if needes anymore
 
 Or remove the installation if it doesn't fit your needs
 ![Removeall](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/X_Remove%20complete%20rtorrent%20and%20rutorrent%20installation.PNG)
-(ruTorrent can be changed without reinstallation!)
+
+Overview of the installed system
+![Installed System Infomation](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/D_System%20Installed%20Information.PNG)
 
 ## Features ##
 - GUI
@@ -123,7 +126,7 @@ Or remove the installation if it doesn't fit your needs
   - List of unrar-nonfree versions in different linux distributions/releases (https://repology.org/project/unrar-nonfree/versions)
 
 ## To-Do's ##
-- more details
+- ~~more details~~
 - ~~add screenshots to readme~~
 - ~~more screenshots~~
 - explain the benefits

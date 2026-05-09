@@ -1,3 +1,10 @@
+Version 4.4
+* fix bug in Installed Information window
+* upgrade the Installed Information so that more infomation
+  visible
+* update README.md
+---------------------------------------------------------------
+
 Version 4.3
 * reduce used cores when "make" libtorrent and rtorrent by one,
   keeping the system responsive during compilation.

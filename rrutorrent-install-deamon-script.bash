@@ -23,7 +23,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V4.3"
+script_versionumber="V4.4"
 #Fullmenu true,false
 fullmenu=false
 
@@ -2965,6 +2965,14 @@ The uninstallation is logged in the remove.log"\
 }
 
 function INSTALLED_INFORMATION {
+	external_ip=$(wget -O - -q ipv4.icanhazip.com 2>/dev/null)
+	internal_ip=$(hostname -I | cut -d' ' -f1 | sed 's/ //g')
+	
+	a2_service=$(systemctl status apache2.service --no-pager | grep Active: | cut -d" " -f7-8)
+	rT_service=$(systemctl status rtorrent.service --no-pager | grep Active: | cut -d" " -f7-8)
+	geo_timer=$(systemctl status geoip.timer --no-pager | grep Active: | cut -d" " -f7-8)
+	geo_service=$(systemctl status geoip.service --no-pager | grep Active: | cut -d" " -f7-8)
+	
 	rtorrent_active=$(rtorrent -h | head -n 1 | cut -d' ' -f5 | cut -d'.' -f1-3)
 	rtorrent_user_name=$(cat /etc/systemd/system/rtorrent.service | grep 'User' | cut -d'=' -f2)
 	rtorrent_user_group=$(groups $rtorrent_user_name | cut -d' ' -f3)
@@ -2989,9 +2997,33 @@ function INSTALLED_INFORMATION {
 	rtorrent_basedir=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name rtorrent-*.log 2>> /dev/null | rev | cut -d'/' -f3- | rev | head -n 1)
 	
 	activ_rutorrent=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect | cut -d'-' -f2)
+	#if [[ $(a2query -s | cut -d' ' -f1 | grep -cq https_redirect) -ne 0 ]]
+	if ( a2query -s | cut -d' ' -f1 | grep -cq https_redirect )
+	then
+		if ( a2query -s | cut -d' ' -f1 | grep -q -i "ss" )
+		then
+			ssl_redirect="Self Signed"
+		else
+			ssl_redirect="Let's Encrypt"
+		fi
+	else
+		ssl_redirect="inactive"
+	fi
+	
+	CURRENT_CONF=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect)
+	status=$(grep "AllowOverride" /etc/apache2/sites-available/$CURRENT_CONF.conf | rev | cut -d' ' -f1 | rev)
+	
+	#All (Webauth on) or None (Webauth off)
+	if [ $status == "All" ]
+	then
+		webauth="active"
+	else
+		webauth="inactive"
+	fi
+	
 	maxmind_update_intervall=$(grep "OnCalendar" /etc/systemd/system/geoip.timer | cut -d"/" -f2 | cut -d" " -f1)
 	last_update_intervall=$(cat /usr/share/GeoIP/last_update.log | cut -d' ' -f3-)
-	next_update_intervall=$(systemctl list-timers | grep geoip | cut -d" " -f-5)
+	next_update_intervall=$(systemctl list-timers | grep geoip | cut -d" " -f-4)
 	
 	unrar_variant=$(dpkg -l | grep ^ii | awk '{print $2}' | grep "unrar")
 	
@@ -3002,7 +3034,12 @@ function INSTALLED_INFORMATION {
 	--begin $x $y \
 	--colors \
 	--msgbox "\
-rtorrent:\n\
+Network:\n\
+   External IP:              \Z4$external_ip\Z0\n\
+   Internal IP:              \Z4$internal_ip\Z0\n\
+\n\
+rTorrent:\n\
+   rTorrent Service:         \Z4$rT_service\Z0\n\
    Version:                  \Z4$rtorrent_active\Z0\n\
    Daemon User:              \Z4$rtorrent_user_name\Z0\n\
    Daemon Group:             \Z4$rtorrent_user_group\Z0\n\
@@ -3010,8 +3047,15 @@ rtorrent:\n\
    Basedir Path:             \Z4$rtorrent_basedir\Z0\n\
    Softlink:                 \Z4$softlink\Z0\n\
 \n\
-rutorrent:\n\
+ruTorrent:\n\
+   apache2 Service:          \Z4$a2_service\Z0\n\
    Active Version:           \Z4$activ_rutorrent\Z0\n\
+   SSL Encryption:           \Z4$ssl_redirect\Z0\n\
+   Web Authentication:       \Z4$webauth\Z0\n\
+\n\
+MaxMind IP Map:\n\
+   geoip Timer:              \Z4$geo_timer\Z0\n\
+   geoip Service:            \Z4$geo_service\Z0\n\
    MaxMind Update Interval:  \Z4$maxmind_update_intervall\Z0 Days\n\
    Last Update:              \Z4$last_update_intervall\Z0\n\
    Next Update:              \Z4$next_update_intervall\Z0\n\
