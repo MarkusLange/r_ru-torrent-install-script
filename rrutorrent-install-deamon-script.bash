@@ -23,7 +23,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V4.4"
+script_versionumber="V4.5"
 #Fullmenu true,false
 fullmenu=false
 
@@ -1461,17 +1461,17 @@ function MENU_RUTORRENT () {
 
 #https://unix.stackexchange.com/questions/285924/how-to-compare-a-programs-version-in-a-shell-script
 function COMPARE_NUMBERS () {
-currentver=$1
-requiredver=$2
-
-if [ "$(printf '%s\n' "$requiredver" "$currentver" | sort -V | head -n1)" = "$requiredver" ]
-then
-	#echo "${currentver} is greater than or equal to ${requiredver}"
-	return 0
-else
-	#echo "${currentver} less than ${requiredver}"
-	return 1
-fi
+	currentver=$1
+	requiredver=$2
+	
+	if [ "$(printf '%s\n' "$requiredver" "$currentver" | sort -V | head -n1)" = "$requiredver" ]
+	then
+		#echo "${currentver} is greater than or equal to ${requiredver}"
+		return 0
+	else
+		#echo "${currentver} less than ${requiredver}"
+		return 1
+	fi
 }
 
 function INSTALL_RUTORRENT () {	
@@ -1533,10 +1533,36 @@ function INSTALL_RUTORRENT () {
 			sudo python$python_version_major -m pip install cloudscraper --quiet >> $LOG_REDIRECTION 2>&1
 		fi
 		
-		# dumptorrent plugin available with ruTorrent version v5 installation needed only once and left out if it allready exist
-		#if (( "${SELECTED:1:1}" >= "5" )) && ( ! apt-cache show dumptorrent 2>&1 >>/dev/null | grep -cq "installed" )
-		if (( "$SELECTED_MAJOR" >= "5" ))
+		if COMPARE_NUMBERS $SELECTED_MAJOR "5"
 		then
+			echo "ruTorrent equal or above version 5" >> $LOG_REDIRECTION 2>&1
+			if [[ -e /usr/bin/dumptorrent ]]
+			then
+				echo "dumptorrent is allready installed" >> $LOG_REDIRECTION 2>&1
+				dt_version_online=$(wget -q https://raw.githubusercontent.com/tomcdj71/dumptorrent/refs/heads/main/CMakeLists.txt -O - | grep -oP '(?<=set\(DUMPTORRENT_VERSION ")[^"]*')
+				dt_version_local=$(dumptorrent -V | cut -d' ' -f3)
+				#dt_version_local="1.6.9"
+				if COMPARE_NUMBERS $dt_version_local $dt_version_online
+				then
+					echo "local dumptorrent version is equal github version" >> $LOG_REDIRECTION 2>&1
+					dt_intallation="false"
+				else
+					echo "local dumptorrent version is lesser than github version" >> $LOG_REDIRECTION 2>&1
+					dt_intallation="true"
+				fi
+			else
+				echo "dumptorrent is not installed" >> $LOG_REDIRECTION 2>&1
+				dt_intallation="true"
+			fi
+		else
+			echo "ruTorrent version less 5 no dumptorrent installation" >> $LOG_REDIRECTION 2>&1
+			dt_intallation="false"
+		fi
+		
+		#if COMPARE_NUMBERS $SELECTED_MAJOR "5"
+		if $dt_intallation
+		then
+			echo "install dumptorrent" >> $LOG_REDIRECTION 2>&1
 			# Clone from repository
 			apt-get install -y build-essential git cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
 			gem install fpm >> $LOG_REDIRECTION 2>&1
@@ -1556,9 +1582,15 @@ function INSTALL_RUTORRENT () {
 			#rm -f dumptorrent.tar.gz
 			#cd dumptorrent
 			
+			#N=$(nproc)
+			case $(nproc) in
+			1)	N=1;;
+			*)	N=$(($(nproc)-1));;
+			esac
+			
 			# Build the binaries
 			cmake -B build/ -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_BUILD_TYPE=Release -S . >> $LOG_REDIRECTION 2>&1
-			cmake --build build/ --config Release --parallel $(nproc) >> $LOG_REDIRECTION 2>&1
+			cmake --build build/ --config Release --parallel $N >> $LOG_REDIRECTION 2>&1
 			
 			# Create necessary directories
 			mkdir -p staging/usr/bin
@@ -1574,18 +1606,18 @@ function INSTALL_RUTORRENT () {
 			
 			# Create the package
 			fpm -s dir -t deb -C staging \
-			  --name dumptorrent \
-			  --version $dt_version \
-			  --architecture $architecture \
-			  --description "DumpTorrent is a command-line utility that displays detailed information about .torrent files" \
-			  --url "https://github.com/tomcdj71/dumptorrent" \
-			  --maintainer "Thomas Chauveau <contact.tomc@yahoo.com>" \
-			  --license "MIT" \
-			  --depends "libc6" \
-			  --deb-compression xz \
-			  --deb-priority optional \
-			  --category net \
-			  usr/bin >> $LOG_REDIRECTION 2>&1
+			--name dumptorrent \
+			--version $dt_version \
+			--architecture $architecture \
+			--description "DumpTorrent is a command-line utility that displays detailed information about .torrent files" \
+			--url "https://github.com/tomcdj71/dumptorrent" \
+			--maintainer "Thomas Chauveau <contact.tomc@yahoo.com>" \
+			--license "MIT" \
+			--depends "libc6" \
+			--deb-compression xz \
+			--deb-priority optional \
+			--category net \
+			usr/bin >> $LOG_REDIRECTION 2>&1
 			
 			# Install the package
 			dpkg -i dumptorrent_*.deb >> $LOG_REDIRECTION 2>&1
@@ -1612,10 +1644,14 @@ function INSTALL_RUTORRENT () {
 			rm -rf /var/www/$SELECTED_CUT/plugins/geoip2/.git
 		fi
 		
-		mkdir -p /usr/share/GeoIP
-		chmod 755 /usr/share/GeoIP
-		
-		cat > "/usr/local/bin/geoip_update.bash" <<-EOF
+		if [ ! -f /usr/local/bin/geoip_update.bash ]
+		then
+			echo "install geoip MaxMnd Map"
+			
+			mkdir -p /usr/share/GeoIP
+			chmod 755 /usr/share/GeoIP
+			
+			cat > "/usr/local/bin/geoip_update.bash" <<-EOF
 #!/bin/bash
 
 rm -f /usr/share/GeoIP/*.mmdb
@@ -1627,9 +1663,9 @@ wget -q https://github.com/snowinszu/GeoLite.mmdb/raw/download/GeoLite2-Country.
 echo "Updated on \$(date '+%a %Y-%m-%d %T %Z')" > "/usr/share/GeoIP/last_update.log"
 EOF
 		
-		chmod +x /usr/local/bin/geoip_update.bash
+			chmod +x /usr/local/bin/geoip_update.bash
 		
-		cat > "/etc/systemd/system/geoip.service" <<-EOF
+			cat > "/etc/systemd/system/geoip.service" <<-EOF
 [Unit]
 Description=Geip update scheduler
 
@@ -1641,7 +1677,7 @@ ExecStart=/usr/local/bin/geoip_update.bash
 WantedBy=default.target
 EOF
 
-		cat > "/etc/systemd/system/geoip.timer" <<-EOF
+			cat > "/etc/systemd/system/geoip.timer" <<-EOF
 [Unit]
 Description=Schedule geoip update every 2 days
 RefuseManualStart=no  # Allow manual starts
@@ -1661,11 +1697,12 @@ Unit=geoip.service
 WantedBy=timers.target
 EOF
 
-		systemctl daemon-reload
-		systemctl enable geoip.service
-		systemctl enable geoip.timer
-		systemctl start geoip.service
-		systemctl start geoip.timer
+			systemctl daemon-reload
+			systemctl enable geoip.service
+			systemctl enable geoip.timer
+			systemctl start geoip.service
+			systemctl start geoip.timer
+		fi
 		
 		chown -R www-data:www-data /var/www/$SELECTED_CUT
 		chmod -R 775 /var/www/$SELECTED_CUT
@@ -2752,7 +2789,7 @@ function REMOVE_UNUSED_RUTORRENTS () {
 	done
 	
 	#dialog --title "Done" --stdout --begin $small_x $y --msgbox "Unused ruTorrent versions deleted" $small_height $width
-	dialog --title "Done" --stdout --begin $small_x $y --sleep 4 --infobox "Unused ruTorrent versions deleted" $small_height $width
+	dialog --title "Done" --stdout --begin $small_x $y --sleep 4 --infobox "\nUnused ruTorrent versions deleted" $small_height $width
 }
 
 function REMOVE_EVERYTHING () {

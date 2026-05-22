@@ -27,7 +27,7 @@ Drop support for Debian 9 (Stretch) and ruTorrent 3.8 with Version 3.6
 
 Drop support for rtorrent 0.9.6 and older with Version 3.8
 
-Use integrated rewritten geoip plugin after ruTorrent 5.3.1
+Use integrated rewritten geoip plugin after ruTorrent 5.3.1 with Version 4.1
 
 Scripted Installation
 ![Scriptet](https://github.com/MarkusLange/r_ru-torrent-install-script/blob/main/screenshots/I_Scripted%20Installation.PNG)
@@ -104,7 +104,7 @@ Overview of the installed system
   - add python path to ruTorrent `config.php` to support cloudflare (3.9+)
   - all included plugins supported and loaded (except geoip)
   - deactivate deprecated geoip plugin since php-geoip is last shipped with php7.4
-  - integrate geoip2 as replacement for geoip (https://github.com/Micdu70/geoip2-rutorrent)
+  - integrate geoip2 as replacement for geoip (https://github.com/Micdu70/geoip2-rutorrent) until ruTorrent Version 5.3.1
   - add automatic update for the MaxMind geoip Maps
   - choose to use httprpc in favor of rpc (both works, also simultaneously) for the XMLRPC (https://github.com/Novik/ruTorrent/discussions/2439)
   - did not use deprecated libapache2-mod-scgi (last update 1.13-1.1 02 Jul 2013, https://metadata.ftp-master.debian.org/changelogs//main/s/scgi/scgi_1.13-1.1_changelog)

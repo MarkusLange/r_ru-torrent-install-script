@@ -1,3 +1,12 @@
+Version 4.5
+* reduce used cores when "make" dumptorrent by one, keeping
+  the system responsive during compilation.
+* check if dumptorrent and geoip ip map allready installed and
+  spare it if not needed, safe some time when updating or
+  changing ruTorrent
+* update README.md
+---------------------------------------------------------------
+
 Version 4.4
 * fix bug in Installed Information window
 * upgrade the Installed Information so that more infomation
@@ -38,7 +47,7 @@ Version 4.1
   MaxMind, default renew every 2 days
 * add option to change the renew intervals of the MaxMind
   IP Map
-* use the included rewritten geoip plugin if rutorrent version
+* use the included rewritten geoip plugin if ruTorrent version
   is v5.3.1 or above
 * fix bug in the installation the script does not use the
   repository version if choosen
@@ -75,7 +84,7 @@ Version 3.8
 ----------------------------------------------------------------
 
 Version 3.7
-* fix an issue with Ubuntu, who 9.5 changed  working the
+* fix an issue with Ubuntu, who 9.5 changed working the
   response to "who -m" is empty now workaraound for empty output
   with "logname"
 ----------------------------------------------------------------
