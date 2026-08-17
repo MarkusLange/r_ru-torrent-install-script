@@ -1,3 +1,18 @@
+Version 4.6
+* change search pattern for "network.listen.port"
+  since .rtorrent.rc was changend on 12.08.2026 to match new
+  syntax required by rtorrent 0.16.20 release
+* enabling argc argv in PHP for ruTorrent v5.3.11 will be
+  needed with PHP 8.5
+* since gem has problems access rubygems.org with IPV6 I
+  blocked the IPV6 address in the conf of gem, so gem is only
+  accessing with IPV4 regardless of whether your server has
+  IPv4 and IPv6 or not
+  #https://stackoverflow.com/questions/49800432/gem-cannot-access-rubygems-org
+* add portrange and port-rotation to
+  System Installed Information
+---------------------------------------------------------------
+
 Version 4.5
 * reduce used cores when "make" dumptorrent by one, keeping
   the system responsive during compilation.

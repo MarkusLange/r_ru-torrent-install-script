@@ -23,7 +23,7 @@ the_group=rtorrent-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V4.5"
+script_versionumber="V4.6"
 #Fullmenu true,false
 fullmenu=false
 
@@ -808,6 +808,9 @@ function APACHE2 {
 	sed -i '/ServerSignature On/  s/^/#/' /etc/apache2/conf-enabled/security.conf
 	sed -i '/ServerSignature Off/  s/^#//' /etc/apache2/conf-enabled/security.conf
 	
+	#enabling argc argv in PHP
+	sed -i 's/;register_argc_argv = Off/register_argc_argv = On/' /etc/php/$PHP_VERSION/apache2/php.ini
+	
 	systemctl reload apache2.service 1>> $LOG_REDIRECTION
 	systemctl restart apache2.service 1>> $LOG_REDIRECTION
 }
@@ -1060,10 +1063,10 @@ function MOVE_RTORRENT_BASEDIR () {
 	#location=$(cat /etc/systemd/system/rtorrent.service | grep "ExecStart" | cut -d'=' -f3 | cut -d'.' -f1)
 	status=$(ls -lrt /home/$rtorrentuser | grep "rtorrent" | grep -c "^l")
 	
-	PORT_RANGE=$(grep 'port_range.set' $rtorrent_rc_path | cut -d' ' -f3)
+	PORT_RANGE=$(grep 'range.set' $rtorrent_rc_path | cut -d' ' -f3)
 	PORT_RANGE_MIN=$(echo $PORT_RANGE | cut -d'-' -f1)
 	PORT_RANGE_MAX=$(echo $PORT_RANGE | cut -d'-' -f2)
-	PORT_SET=$(grep 'port_random.set' $rtorrent_rc_path | cut -d' ' -f3)
+	PORT_SET=$(grep 'random.set' $rtorrent_rc_path | cut -d' ' -f3)
 	DLFOLDER=$rtorrent_basedir
 	
 	PRESENT_PORT_SET=$PORT_SET
@@ -1145,8 +1148,8 @@ rtorrent folder stucture:\n
 		
 		systemctl stop rtorrent.service 1> /dev/null
 		
-		sed -i '/port_range.set/ s/'"$PORT_RANGE"'/'"${RC[0]}"'/' $rtorrent_rc_path
-		sed -i '/port_random.set/ s/'"$PRESENT_PORT_SET"'/'"${RC[1]}"'/' $rtorrent_rc_path
+		sed -i '/range.set/ s/'"$PORT_RANGE"'/'"${RC[0]}"'/' $rtorrent_rc_path
+		sed -i '/random.set/ s/'"$PRESENT_PORT_SET"'/'"${RC[1]}"'/' $rtorrent_rc_path
 		
 		if [[ "$PRESENT_DLFOLDER" != "${RC[2]}" ]]
 		then
@@ -1565,7 +1568,16 @@ function INSTALL_RUTORRENT () {
 			echo "install dumptorrent" >> $LOG_REDIRECTION 2>&1
 			# Clone from repository
 			apt-get install -y build-essential git cmake ruby ruby-dev >> $LOG_REDIRECTION 2>&1
+			
+			#since gem has problems access rubygems.org with IPV6 I blocked the address in the conf of gem
+			#https://stackoverflow.com/questions/49800432/gem-cannot-access-rubygems-org
+			#sed -i '/precedence/ s/^#//g' /etc/gai.conf
+			sed -i '/precedence ::ffff:0:0\/96  100/a precedence  2a04:4e42::0\/32  5' /etc/gai.conf
 			gem install fpm >> $LOG_REDIRECTION 2>&1
+			#sed -i '/precedence  2a04:4e42::0\/32  5/d' /etc/gai.conf
+			#sed -i '/precedence/ s/^/#/g' /etc/gai.conf
+			
+			sed -i '/precedence/ s/^/#/g' /etc/gai.conf
 			rm -rf /home/$stdin_user/dumptorrent/
 			git clone https://github.com/tomcdj71/dumptorrent.git >> $LOG_REDIRECTION 2>&1
 			cd dumptorrent
@@ -2656,13 +2668,13 @@ function INSTALLATION () {
 	(time INSTALL_RTORRENT $RTORRENT_VERSION) >> $LOG_REDIRECTION 2>&1
 	(time RTORRENT "${RT_DAEMON[@]}") >> $LOG_REDIRECTION 2>&1
 	
-	PORT_RANGE=$(grep 'port_range.set' ${RC[2]}/rtorrent/.rtorrent.rc | cut -d' ' -f3)
-	PORT_SET=$(grep 'port_random.set' ${RC[2]}/rtorrent/.rtorrent.rc | cut -d' ' -f3)
+	PORT_RANGE=$(grep 'range.set' ${RC[2]}/rtorrent/.rtorrent.rc | cut -d' ' -f3)
+	PORT_SET=$(grep 'random.set' ${RC[2]}/rtorrent/.rtorrent.rc | cut -d' ' -f3)
 	DLFOLDER=$(grep 'method.insert = cfg.basedir' ${RC[2]}/rtorrent/.rtorrent.rc | cut -d'"' -f2 | rev | cut -d'/' -f3- | rev)
 	
 	# RC[_] 0 Portrange, 1 random port set, 2 rtorrent basedir
-	sed -i '/port_range.set/ s/'"$PORT_RANGE"'/'"${RC[0]}"'/' ${RC[2]}/rtorrent/.rtorrent.rc
-	sed -i '/port_random.set/ s/'"$PORT_SET"'/'"${RC[1]}"'/' ${RC[2]}/rtorrent/.rtorrent.rc
+	sed -i '/range.set/ s/'"$PORT_RANGE"'/'"${RC[0]}"'/' ${RC[2]}/rtorrent/.rtorrent.rc
+	sed -i '/random.set/ s/'"$PORT_SET"'/'"${RC[1]}"'/' ${RC[2]}/rtorrent/.rtorrent.rc
 	sed -i 's#'"$DLFOLDER"'#'"${RC[2]}"'#' ${RC[2]}/rtorrent/.rtorrent.rc
 	
 	echo "Enable rtorrent" 1>> $LOG_REDIRECTION
@@ -3032,6 +3044,8 @@ function INSTALLED_INFORMATION {
 	fi
 	
 	rtorrent_basedir=$(find / -not \( -path /proc/sys/fs/binfmt_misc -prune \) -name rtorrent-*.log 2>> /dev/null | rev | cut -d'/' -f3- | rev | head -n 1)
+	port_range=$(grep 'range.set' $rtorrent_basedir/.rtorrent.rc | cut -d' ' -f3)
+	port_set=$(grep 'random.set' $rtorrent_basedir/.rtorrent.rc | cut -d' ' -f3)
 	
 	activ_rutorrent=$(a2query -s | cut -d' ' -f1 | grep -v https_redirect | cut -d'-' -f2)
 	#if [[ $(a2query -s | cut -d' ' -f1 | grep -cq https_redirect) -ne 0 ]]
@@ -3082,6 +3096,8 @@ rTorrent:\n\
    Daemon Group:             \Z4$rtorrent_user_group\Z0\n\
    Group Members:            \Z4$user_of_rtorrent_group\Z0\n\
    Basedir Path:             \Z4$rtorrent_basedir\Z0\n\
+   Portrange                 \Z4$port_range\Z0\n\
+   Random Listening port     \Z4$port_set\Z0\n\
    Softlink:                 \Z4$softlink\Z0\n\
 \n\
 ruTorrent:\n\
