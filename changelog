@@ -8,7 +8,7 @@ Version 4.6
   blocked the IPV6 address in the conf of gem, so gem is only
   accessing with IPV4 regardless of whether your server has
   IPv4 and IPv6 or not
-  #https://stackoverflow.com/questions/49800432/gem-cannot-access-rubygems-org
+  https://stackoverflow.com/questions/49800432/gem-cannot-access-rubygems-org
 * add portrange and port-rotation to
   System Installed Information
 ---------------------------------------------------------------
