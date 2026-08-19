@@ -18,12 +18,12 @@ LOG_REDIRECTION="/dev/null"
 #LOG_REDIRECTION=$logfile
 
 #rtorrent daemon user
-the_user=rtorrent-daemon
-the_group=rtorrent-common
+the_user=rt-daemon
+the_group=rt-common
 change_on_script=true
 
 #Script versionnumber
-script_versionumber="V4.6"
+script_versionumber="V4.7"
 #Fullmenu true,false
 fullmenu=false
 
@@ -108,7 +108,7 @@ python_version_minor=$(echo "$python_version" | cut -d'.' -f2)
 python_pip=python$python_version_major-pip
 
 #php
-#php_version="$(apt-cache policy php | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1)"
+PHP_VERSION=$(apt-cache policy php | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1)
 php_version=$(apt-cache policy php | head -3 | tail -1 | cut -d' ' -f4 | cut -d':' -f2 | cut -d'+' -f1-3)
 
 #apache2
@@ -3018,6 +3018,8 @@ function INSTALLED_INFORMATION {
 	internal_ip=$(hostname -I | cut -d' ' -f1 | sed 's/ //g')
 	
 	a2_service=$(systemctl status apache2.service --no-pager | grep Active: | cut -d" " -f7-8)
+	php_version=$(php -v | head -n1 | cut -d' ' -f2)
+	apache2_version=$(apache2 -v | head -n1 | cut -d' ' -f3 | cut -d'/' -f2)
 	rT_service=$(systemctl status rtorrent.service --no-pager | grep Active: | cut -d" " -f7-8)
 	geo_timer=$(systemctl status geoip.timer --no-pager | grep Active: | cut -d" " -f7-8)
 	geo_service=$(systemctl status geoip.service --no-pager | grep Active: | cut -d" " -f7-8)
@@ -3102,7 +3104,9 @@ rTorrent:\n\
 \n\
 ruTorrent:\n\
    apache2 Service:          \Z4$a2_service\Z0\n\
-   Active Version:           \Z4$activ_rutorrent\Z0\n\
+   apache2 Version:          \Z4$apache2_version\Z0\n\
+   php Version:              \Z4$php_version\Z0\n\
+   aktive ruTorrent Version: \Z4$activ_rutorrent\Z0\n\
    SSL Encryption:           \Z4$ssl_redirect\Z0\n\
    Web Authentication:       \Z4$webauth\Z0\n\
 \n\

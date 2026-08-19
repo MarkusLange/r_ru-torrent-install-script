@@ -1,3 +1,11 @@
+Version 4.7
+* add apache2 and php version to System Installed Information
+* fix bug inside APACHE2 function enabling argc argv in PHP
+  was not working
+* shorten rtorrent daemon user and group name to rt-daemon
+  respectiv rt-common
+---------------------------------------------------------------
+
 Version 4.6
 * change search pattern for "network.listen.port"
   since .rtorrent.rc was changend on 12.08.2026 to match new
@@ -8,7 +16,7 @@ Version 4.6
   blocked the IPV6 address in the conf of gem, so gem is only
   accessing with IPV4 regardless of whether your server has
   IPv4 and IPv6 or not
-  #https://stackoverflow.com/questions/49800432/gem-cannot-access-rubygems-org
+  https://stackoverflow.com/questions/49800432/gem-cannot-access-rubygems-org
 * add portrange and port-rotation to
   System Installed Information
 ---------------------------------------------------------------
