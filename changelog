@@ -1,3 +1,8 @@
+Version 4.8
+* add php-zip for source plugin and php-sqlite3 for geoip
+  plugin needed to the installation for ruTorrent v5.3.14
+---------------------------------------------------------------
+
 Version 4.7
 * add apache2 and php version to System Installed Information
 * fix bug inside APACHE2 function enabling argc argv in PHP
